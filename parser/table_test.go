@@ -121,3 +121,90 @@ func TestColumnBoundaries(t *testing.T) {
 		t.Errorf("expected at least 3 boundaries, got %d: %v", len(bounds), bounds)
 	}
 }
+
+// TestPrefixedLogLineNotTable guards against the LLB / bracketed-prefix false
+// positive: consecutive lines shaped like `[prefix]    content` create a
+// two-boundary "table" (position 0 + the space gap after the bracket). Those
+// lines are never tabular — they're just prefixed log output.
+func TestPrefixedLogLineNotTable(t *testing.T) {
+	p := New()
+	rows := []string{
+		"[LLB:1777068038434026212]    logger.go:42: 15:44:40 | myapp/1-create | Forwarding 127.0.0.1:8283",
+		"[LLB:1777068038439484431]    logger.go:42: 15:44:40 | myapp/1-create | Forwarding [::1]:8283",
+		"[LLB:1777068038443821752]    logger.go:42: 15:44:53 | myapp/1-create | === RUN Test",
+	}
+	for _, r := range rows {
+		p.Parse(r, false)
+	}
+	for i, l := range p.Lines() {
+		if l.Type == line.TypeTable {
+			t.Errorf("row %d should not be detected as a table: %q", i, l.Raw)
+		}
+	}
+}
+
+// TestCoincidentalSpaceGapsNotTable guards against a space-gap variant of the
+// prefixed-log false positive: two consecutive lines share their long prefix
+// (so they match on boundary 0 and one boundary in the prefix) but the gaps
+// beyond the prefix fall at different positions because of content. With only
+// two boundaries in common, this must not register as a two-row table.
+func TestCoincidentalSpaceGapsNotTable(t *testing.T) {
+	p := New()
+	rows := []string{
+		"[LLB:1777068038443821752]     logger.go:42: 15:44:53 | myapp/1-create | === RUN   TestE2EMyAppInstallCreateDefault",
+		"[LLB:1777068038449160566]     logger.go:42: 15:44:53 | myapp/1-create |     printer.go:57: POST http://localhost:8283/v1/internal/gateways",
+	}
+	for _, r := range rows {
+		p.Parse(r, false)
+	}
+	for i, l := range p.Lines() {
+		if l.Type == line.TypeTable {
+			t.Errorf("row %d should not be detected as a table: %q", i, l.Raw)
+		}
+	}
+}
+
+// TestTabIndentedErrorTraceNotTable guards against treating tab-aligned error
+// traces as tab-delimited tables. The cells between consecutive tabs collapse
+// to whitespace-only (e.g. `\t\t\t\t` leaves three empty cells), which is the
+// telltale sign of tab-as-indentation rather than tab-as-column-separator.
+func TestTabIndentedErrorTraceNotTable(t *testing.T) {
+	p := New()
+	rows := []string{
+		"    logger.go:42: 15:44:53 | t/1 |         \tError Trace:\t/a/reporter.go:24",
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \t\t\t\t/a/assertion.go:278",
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \t\t\t\t/a/chain.go:406",
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \t\t\t\t/a/response.go:285",
+	}
+	for _, r := range rows {
+		p.Parse(r, false)
+	}
+	for i, l := range p.Lines() {
+		if l.Type == line.TypeTable {
+			t.Errorf("row %d should not be detected as a table (tab indentation, not columns): %q", i, l.Raw)
+		}
+	}
+}
+
+// TestTabAlignedHTTPBlockNotTable guards against the request/response block
+// pattern from httpexpect: every row has exactly two tabs with a whitespace-
+// only cell sandwiched between them, used purely to align the body content
+// to a fixed column. These share tab positions across rows but aren't a
+// table — the only "middle" cell is empty on every row.
+func TestTabAlignedHTTPBlockNotTable(t *testing.T) {
+	p := New()
+	rows := []string{
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \trequest: POST /v1/internal/gateways HTTP/1.1",
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \t  Host: localhost:8283",
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \t  Content-Type: application/json; charset=utf-8",
+		"    logger.go:42: 15:44:53 | t/1 |         \t            \tresponse: HTTP/1.1 409 Conflict 21.607339ms",
+	}
+	for _, r := range rows {
+		p.Parse(r, false)
+	}
+	for i, l := range p.Lines() {
+		if l.Type == line.TypeTable {
+			t.Errorf("row %d should not be detected as a table (tab-aligned HTTP block): %q", i, l.Raw)
+		}
+	}
+}

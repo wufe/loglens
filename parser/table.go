@@ -2,8 +2,17 @@ package parser
 
 import (
 	"loglens/line"
+	"strings"
 	"unicode"
 )
+
+// minTableColumns is the smallest column count we treat as a table. Two-column
+// "tables" (a prefix gap plus the rest of the line) are almost always a log
+// preamble — e.g. `[LLB:123]    content` or `[ts]  msg` — not tabular data.
+// Real tables in log output (kubectl get, go test summaries, kuttl events)
+// have three or more columns, so requiring ≥3 eliminates that class of false
+// positive without costing anything in practice.
+const minTableColumns = 3
 
 // TableTracker detects aligned column tables across consecutive lines.
 type TableTracker struct {
@@ -35,6 +44,14 @@ func NewTableTracker() *TableTracker {
 // (tabs are unambiguous column delimiters); otherwise we fall back to
 // detecting ≥2-space gaps.
 func (tt *TableTracker) Feed(raw string, tabGaps []line.TabGap, lineIdx int, buf *Buffer, allLines []*line.LogLine) *line.TableMeta {
+	// Tab-indented free-form text (error traces, stack traces) has tabs used
+	// for alignment rather than column separation. We detect it up front so a
+	// sequence of such lines doesn't accumulate into a fake table group.
+	if len(tabGaps) > 0 && looksLikeTabIndentation(raw, tabGaps) {
+		tt.reset()
+		return nil
+	}
+
 	var boundaries []int
 	if len(tabGaps) > 0 {
 		boundaries = tabGapBoundaries(raw, tabGaps)
@@ -42,17 +59,25 @@ func (tt *TableTracker) Feed(raw string, tabGaps []line.TabGap, lineIdx int, buf
 		boundaries = computeColumnBoundaries(raw)
 	}
 
-	// Need at least 2 columns (so at least 2 boundaries including position 0)
-	if len(boundaries) < 2 {
+	if len(boundaries) < minTableColumns {
 		tt.reset()
 		return nil
 	}
 
-	// Check alignment with previous line
+	// Check alignment with previous line. For tab-based groups the tab stops
+	// give us unambiguous column positions, so just two matching boundaries is
+	// a reliable signal (and tolerates drift when variable object-name lengths
+	// push later tabs to different stops). Space-gap detection is much noisier
+	// — e.g. `[LLB:N] ...log... === RUN   Test` and `[LLB:N] ...log... printer.go:57:`
+	// both happen to produce a gap in roughly the same area but they aren't a
+	// table — so we require the full minTableColumns to match there.
 	if tt.prevLineIdx == lineIdx-1 && tt.prevBoundaries != nil {
 		matching := countMatchingBoundaries(tt.prevBoundaries, boundaries)
-		// Need at least 2 matching column boundaries
-		if matching >= 2 {
+		matchThreshold := 2
+		if len(tabGaps) == 0 {
+			matchThreshold = minTableColumns
+		}
+		if matching >= matchThreshold {
 			tt.count++
 			if tt.count == 2 {
 				// This is the second consecutive matching line — retroactively mark the first
@@ -144,6 +169,35 @@ func updateGroupWidths(state *line.TableGroupState, raw string, gaps []line.TabG
 	if lastW > 0 && lastW > state.ColWidths[len(gaps)] {
 		state.ColWidths[len(gaps)] = lastW
 	}
+}
+
+// looksLikeTabIndentation returns true when the row's tab-separated cells
+// suggest the tabs are being used for alignment/indentation, not columns.
+// Rule: if the row has middle cells (cells between consecutive tabs) and
+// none of them contain any non-whitespace content, the tabs are producing
+// pure indentation — think httpexpect's `…\t            \trequest: POST …`
+// (one whitespace-only middle cell) or its stack-trace cousin
+// `…\t            \t\t\t\t/path` (four whitespace-only middle cells in a
+// row). A real table row always has at least one middle column with data;
+// kubectl events may leave one intentionally blank (`\t\t` between Object
+// and Reason) but never leave every middle column empty in the same row.
+//
+// Leading (cell 0) and trailing (cell N) cells are not inspected — leading
+// whitespace before the first tab is normal indentation, and a trailing
+// empty cell is rare but benign.
+func looksLikeTabIndentation(raw string, gaps []line.TabGap) bool {
+	if len(gaps) < 2 {
+		return false
+	}
+	prevEnd := gaps[0].End
+	for i := 1; i < len(gaps); i++ {
+		cell := raw[prevEnd:gaps[i].Start]
+		if strings.TrimSpace(cell) != "" {
+			return false
+		}
+		prevEnd = gaps[i].End
+	}
+	return true
 }
 
 // tabGapBoundaries returns column start positions derived from tab gaps:
