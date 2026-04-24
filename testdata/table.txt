@@ -1,0 +1,4 @@
+NAME                     STATUS   AGE
+my-operator-system-dev   Active   13h
+kube-system              Active   2d
+default                  Active   2d

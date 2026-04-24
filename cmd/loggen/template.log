@@ -1,0 +1,142 @@
+test -n "/usr/bin/curl" && test -s "/usr/bin/curl" || (echo "curl not found"; exit 1);
+echo "used ns: my-operator-system used img: example/my-service:latest serviceaccount tester:controller-manager"
+used ns: my-operator-system used img: example/my-service:latest serviceaccount tester:controller-manager
+KUTTL_TEST=true go test -count=1 ././tests/e2e/myapp-install -v
+=== RUN   TestE2eKuttlMyAppInstall
+    kuttl_myapp_install_test.go:27: Current work dir:/home/user/project/tests/e2e/myapp-install
+    kuttl_myapp_install_test.go:30: Test case dir:/home/user/project/tests/e2e/myapp-install/kuttl
+    harness.go:470: starting setup
+    harness.go:263: running tests using configured kubeconfig.
+    harness.go:286: Successful connection to cluster at: https://192.168.0.1:8443
+    harness.go:371: running tests
+    harness.go:74: going to run test suite with timeout of 120 seconds for each step
+    harness.go:383: testsuite: /home/user/project/tests/e2e/myapp-install/kuttl has 1 tests
+=== RUN   TestE2eKuttlMyAppInstall/harness
+=== RUN   TestE2eKuttlMyAppInstall/harness/myapp-install-create-default
+    logger.go:42: 15:44:39 | myapp-install-create-default | Skipping creation of user-supplied namespace: my-operator-system
+    logger.go:42: 15:44:39 | myapp-install-create-default/0-install | starting test step 0-install
+    logger.go:42: 15:44:39 | myapp-install-create-default/0-install | ConfigMap:my-operator-system/my-operator-cm created
+    logger.go:42: 15:44:39 | myapp-install-create-default/0-install | Secret:my-operator-system/my-org-clusters-00000000-0000 updated
+    logger.go:42: 15:44:39 | myapp-install-create-default/0-install | test step completed 0-install
+    logger.go:42: 15:44:39 | myapp-install-create-default/1-create-cr | starting test step 1-create-cr
+    logger.go:42: 15:44:39 | myapp-install-create-default/1-create-cr | running command: [sh -c echo "Starting port-forward to my-service..."
+        kubectl port-forward -n my-operator-system deployment/my-service 8283:8283 &
+        PF_PID=$!
+        sleep 12
+        export KUTTL_TEST=true
+        go test -count=1 -v ../../tests -run '^TestE2EMyAppInstallCreateDefault$'
+        GO_EXIT=$?
+        echo "Go test exit code: $GO_EXIT"
+        echo "Killing port-forward with PID $PF_PID"
+        kill $PF_PID
+        exit $GO_EXIT
+        ]
+    logger.go:42: 15:44:39 | myapp-install-create-default/1-create-cr | Starting port-forward to my-service...
+    logger.go:42: 15:44:40 | myapp-install-create-default/1-create-cr | Forwarding from 127.0.0.1:8283 -> 8283
+    logger.go:42: 15:44:40 | myapp-install-create-default/1-create-cr | Forwarding from [::1]:8283 -> 8283
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | === RUN   TestE2EMyAppInstallCreateDefault
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |     printer.go:57: POST http://localhost:8283/v1/internal/gateways
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | Handling connection for 8283
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |     reporter.go:24:
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	Error Trace:	/home/user/go/pkg/mod/github.com/gavv/httpexpect/v2@v2.17.0/reporter.go:24
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            				/home/user/go/pkg/mod/github.com/gavv/httpexpect/v2@v2.17.0/assertion.go:278
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            				/home/user/go/pkg/mod/github.com/gavv/httpexpect/v2@v2.17.0/chain.go:406
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            				/home/user/go/pkg/mod/github.com/gavv/httpexpect/v2@v2.17.0/response.go:285
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            				/home/user/project/tests/e2e/myapp-install/tests/myapp_install_test.go:108
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	Error:
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	unexpected http status value
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	test name: TestE2EMyAppInstallCreateDefault
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	request: POST /v1/internal/gateways HTTP/1.1
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  Host: localhost:8283
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  Content-Type: application/json; charset=utf-8
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	response: HTTP/1.1 409 Conflict 21.607339ms
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  Content-Length: 37
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  Content-Type: application/json; charset=utf-8
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  Date: Tue, 14 Apr 2026 13:44:53 GMT
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	assertion:
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  Request("POST").Expect().Status()
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	expected value:
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  "201 Created"
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	actual value:
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	            	  "409 Conflict"
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr |         	Test:       	TestE2EMyAppInstallCreateDefault
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | --- FAIL: TestE2EMyAppInstallCreateDefault (0.02s)
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | FAIL
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | FAIL	github.com/example/my-service/tests/e2e/myapp-install/tests	0.031s
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | FAIL
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | Go test exit code: 1
+    logger.go:42: 15:44:53 | myapp-install-create-default/1-create-cr | Killing port-forward with PID 12345
+    case.go:396: failed in step 1-create-cr
+    case.go:398: command "echo \"Starting port-forward to my-service...\"\\n kubectl por..." failed, exit status 1
+    logger.go:42: 15:44:53 | myapp-install-create-default | myapp-install-create-default events from ns my-operator-system:
+=== NAME  TestE2eKuttlMyAppInstall
+    harness.go:414: run tests finished
+    kuttl_ctrf_converter.go:21: reportData:{
+           "name": "",
+           "tests": 3,
+           "failures": 1,
+           "time": "13.341",
+           "testsuite": [
+             {
+               "tests": 3,
+               "failures": 1,
+               "timestamp": "2026-04-14T15:44:39.936680398+02:00",
+               "time": "13.327",
+               "name": "/home/user/project/tests/e2e/myapp-install/kuttl",
+               "testsuite": [
+                 {
+                   "tests": 3,
+                   "failures": 1,
+                   "timestamp": "2026-04-14T15:44:39.93773611+02:00",
+                   "time": "13.326",
+                   "name": "myapp-install-create-default",
+                   "testcase": [
+                     {
+                       "classname": "myapp-install-create-default",
+                       "name": "setup",
+                       "timestamp": "2026-04-14T15:44:53.263658312+02:00",
+                       "time": "0.000"
+                     },
+                     {
+                       "classname": "myapp-install-create-default",
+                       "name": "step 0-install",
+                       "timestamp": "2026-04-14T15:44:53.263662381+02:00",
+                       "time": "0.000",
+                       "assertions": 2
+                     },
+                     {
+                       "classname": "myapp-install-create-default",
+                       "name": "step 1-create-cr",
+                       "timestamp": "2026-04-14T15:44:53.263663888+02:00",
+                       "time": "0.000",
+                       "assertions": 3,
+                       "failure": {
+                         "text": "command \"echo \\\"Starting port-forward to my-service...\\\"\\\\n kubectl por...\" failed, exit status 1",
+                         "message": "failed in step 1-create-cr"
+                       }
+                     }
+                   ]
+                 }
+               ]
+             }
+           ]
+         }
+    kuttl_ctrf_converter.go:34: testsuite from report kuttl:1
+    kuttl_ctrf_converter.go:41: testcase counter from report kuttl:1
+    kuttl_ctrf_converter.go:96: Generated CTRF report: /home/user/project/tests/reports/kuttl-myapp-install-ctrf-report.json
+    harness.go:521: cleaning up
+    harness.go:563: skipping cluster tear down
+    harness.go:564: to connect to the cluster, run: export KUBECONFIG="/home/user/project/tests/e2e/myapp-install/kubeconfig"
+--- FAIL: TestE2eKuttlMyAppInstall (13.34s)
+    --- FAIL: TestE2eKuttlMyAppInstall/harness (13.33s)
+        --- FAIL: TestE2eKuttlMyAppInstall/harness/myapp-install-create-default (13.33s)
+FAIL
+FAIL	github.com/example/my-service/tests/e2e/myapp-install	13.356s
+FAIL
+make: *** [Makefile:117: e2e-helm] Error 1

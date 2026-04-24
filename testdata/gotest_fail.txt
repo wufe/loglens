@@ -1,0 +1,8 @@
+=== RUN   kuttl
+=== RUN   kuttl/harness
+=== RUN   kuttl/harness/myapp-install-default
+--- FAIL: kuttl (439.95s)
+    --- FAIL: kuttl/harness (0.00s)
+        --- PASS: kuttl/harness/myapp-install-console-config (45.45s)
+        --- FAIL: kuttl/harness/myapp-install-default (135.81s)
+FAIL

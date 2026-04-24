@@ -1,0 +1,5 @@
+Warning: resource configmaps/my-operator-cm is missing
+ERROR: connection refused to database
+FATAL: cannot start service
+INFO: server started on port 8080
+DEBUG: processing request id=12345

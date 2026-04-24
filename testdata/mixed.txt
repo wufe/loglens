@@ -1,0 +1,21 @@
+2026-04-11 10:00:00 +0200 CEST Starting test suite
+=== RUN   TestIntegration
+INFO: connecting to cluster
+Warning: using deprecated API version
+NAME                     STATUS   AGE
+my-operator-system   Active   13h
+kube-system              Active   2d
+deployment.apps/my-deploy configured
+{"event":"test_start","test":"integration","timestamp":"2026-04-11T10:00:01Z"}
+--- a/config.yaml
++++ b/config.yaml
+@@ -1,3 +1,4 @@
+ apiVersion: v1
++kind: ConfigMap
+ metadata:
+   name: test
+--- PASS: TestIntegration (12.34s)
+PASS
+ok  	example/integration	12.345s
+ERROR: cleanup failed for resource deployment.apps/leftover
+logger.go:42: 10:00:15 test completed successfully

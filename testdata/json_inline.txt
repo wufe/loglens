@@ -1,0 +1,3 @@
+{"name":"test","value":42,"active":true}
+[1,2,3,"hello"]
+{"nested":{"key":"value"},"array":[1,2,3]}

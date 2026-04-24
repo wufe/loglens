@@ -1,0 +1,8 @@
+=== RUN   TestAdd
+=== RUN   TestAdd/positive
+=== RUN   TestAdd/negative
+--- PASS: TestAdd (0.00s)
+    --- PASS: TestAdd/positive (0.00s)
+    --- PASS: TestAdd/negative (0.00s)
+PASS
+ok  	example/math	0.003s

@@ -1,0 +1,9 @@
+  - widget.example.io/finalizer
+echo ${VAR}
+fmt.Sprintf("{%d}")
+go 1.25.0
+http://localhost:8080
+- this is a list item
+{}
+key:value:pair
+/usr/local/bin/kubectl

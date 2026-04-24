@@ -1,0 +1,10 @@
+--- a/file.go
++++ b/file.go
+@@ -3,7 +3,8 @@
+ metadata:
+   finalizers:
+   - widget.example.io/finalizer
++  managedFields: '[... elided ...]'
+   name: e2e-widget-cr-test
+-  oldField: true
++  newField: false
