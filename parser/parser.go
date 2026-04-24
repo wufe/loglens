@@ -144,6 +144,17 @@ func (p *Parser) Lines() []*line.LogLine {
 	return p.allLines
 }
 
+// AppendExternal appends a pre-built LogLine to the parser's internal slice
+// without running detectors. The ingestor uses this for synthesized lines
+// (e.g. coalesced ffmpeg progress entries) so that parser.allLines and the
+// store remain index-aligned — reparseIndices and Search both depend on
+// that invariant. The line is pushed into the lookback buffer too, so the
+// multi-line JSON detector doesn't underrun when the next raw line arrives.
+func (p *Parser) AppendExternal(l *line.LogLine) {
+	p.allLines = append(p.allLines, l)
+	p.buffer.Push(l)
+}
+
 // LastLine returns the most recently parsed line, or nil if none.
 func (p *Parser) LastLine() *line.LogLine {
 	if len(p.allLines) == 0 {

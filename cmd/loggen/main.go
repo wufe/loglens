@@ -40,6 +40,8 @@ func main() {
 		maxLines    = flag.Int64("max-lines", 0, "stop after emitting N lines (0 = unbounded)")
 		flushEvery  = flag.Int("flush-every", 256, "flush stdout every N lines (0 = line buffered)")
 		silentStats = flag.Bool("quiet", false, "suppress end-of-run summary on stderr")
+		ffmpegMix   = flag.Bool("ffmpeg", false, "occasionally inject ffmpeg -progress blocks; some runs complete (progress=end), some abort near 90% followed by a recognizable marker log")
+		ffmpegRate  = flag.Float64("ffmpeg-rate", 0.005, "per-line probability of starting a new ffmpeg session when --ffmpeg is set")
 	)
 	flag.Usage = usage
 	flag.Parse()
@@ -73,6 +75,22 @@ func main() {
 	default:
 		fmt.Fprintf(os.Stderr, "loggen: unknown shape %q (want kuttl|s3json)\n", *shape)
 		os.Exit(1)
+	}
+
+	// --ffmpeg wraps the base generator with an injector that periodically
+	// replaces the next line with a synthetic ffmpeg -progress block. See
+	// ffmpegInjector for the session semantics (complete vs. aborted).
+	var ffmpegInj *ffmpegInjector
+	if *ffmpegMix {
+		if *ffmpegRate < 0 {
+			*ffmpegRate = 0
+		}
+		if *ffmpegRate > 1 {
+			*ffmpegRate = 1
+		}
+		ffmpegInj = newFFmpegInjector(*ffmpegRate)
+		base := nextLine
+		nextLine = func() string { return ffmpegInj.nextOrBase(base) }
 	}
 
 	var rateFn func(t time.Duration) float64
@@ -166,6 +184,11 @@ loop:
 		fmt.Fprintf(os.Stderr,
 			"loggen: emitted=%d wall=%.3fs avg_rate=%.0f lines/sec start=%.0f end=%.0f ramp=%s\n",
 			emitted, wall.Seconds(), avg, *startRate, *endRate, *ramp)
+		if ffmpegInj != nil {
+			fmt.Fprintf(os.Stderr,
+				"loggen: ffmpeg_sessions complete=%d aborted=%d\n",
+				ffmpegInj.sessionsComplete, ffmpegInj.sessionsAborted)
+		}
 	}
 }
 
@@ -274,5 +297,8 @@ Examples:
 
   # Step-function (hold each rate long enough to see lag stabilize):
   loggen --ramp step --steps 1000,5000,20000,100000,300000 --step-hold 10s \
-    | loglens --bench out.txt`)
+    | loglens --bench out.txt
+
+  # Interleave synthetic ffmpeg -progress sessions (some complete, some abort):
+  loggen --ffmpeg --start-rate 200 --end-rate 200 --duration 20s | loglens`)
 }

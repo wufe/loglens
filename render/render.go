@@ -190,6 +190,8 @@ func renderContent(l *line.LogLine, width int, styles *Styles) string {
 		return renderTableFormatted(l, highlighted, styles)
 	case line.TypeWarning:
 		return renderWarning(l, styles)
+	case line.TypeFFmpegProgress:
+		return renderFFmpegProgress(l, width, styles)
 	default:
 		return renderHighlights(l, styles)
 	}

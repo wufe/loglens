@@ -16,6 +16,7 @@ func init() {
 	gob.Register(&line.DiffMeta{})
 	gob.Register(&line.TableMeta{})
 	gob.Register(&line.WarningMeta{})
+	gob.Register(&line.FFmpegMeta{})
 	// JSONMeta.Value can contain these Go types (produced by json.Unmarshal):
 	gob.Register(map[string]interface{}{})
 	gob.Register([]interface{}{})

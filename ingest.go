@@ -50,6 +50,13 @@ type sharedState struct {
 	minimapExtents []lineExtent
 	minimapMaxCol  int
 
+	// activeFFmpegIdx points at the index of a live TypeFFmpegProgress line.
+	// While non-negative, incoming ffmpeg key=value lines mutate that line
+	// in place (no new entries appended). It resets to -1 when the stream
+	// ends (`progress=end`) or is interrupted by a non-ffmpeg line — at that
+	// point the progress bar freezes on whatever percentage it had.
+	activeFFmpegIdx int
+
 	totalLen atomic.Int64
 	eof      atomic.Bool
 	exitCode atomic.Int32
@@ -57,9 +64,10 @@ type sharedState struct {
 
 func newSharedState(ls *store.LineStore) *sharedState {
 	s := &sharedState{
-		store:      ls,
-		parser:     parser.New(),
-		visRowsBIT: newFenwick(1024),
+		store:           ls,
+		parser:          parser.New(),
+		visRowsBIT:      newFenwick(1024),
+		activeFFmpegIdx: -1,
 	}
 	s.exitCode.Store(-1)
 	return s
@@ -262,6 +270,21 @@ func (ig *ingestor) ingestBatch(batch []input.RawLine) {
 func (s *sharedState) ingestOneLocked(raw input.RawLine) {
 	fromStderr := raw.Source == input.SourceStderr
 
+	// ffmpeg -progress coalescing: key=value lines mutate a single live
+	// line instead of appending. Returning early here means the parser
+	// never sees the progress stream, which is what we want — its normal
+	// detectors would otherwise light up one entry per key.
+	if key, value, ok := parseFFmpegKV(raw.Text); ok {
+		if s.handleFFmpegKVLocked(key, value, fromStderr) {
+			return
+		}
+	} else {
+		// Any non-ffmpeg line freezes the current bar (if any) and falls
+		// through to normal ingestion. The frozen line keeps its last
+		// percentage and stays in the log as an immutable entry.
+		s.freezeActiveFFmpegLocked()
+	}
+
 	result := s.parser.Parse(raw.Text, fromStderr)
 	l := s.parser.LastLine()
 	s.store.Append(l)
@@ -302,6 +325,105 @@ func (s *sharedState) ingestOneLocked(raw input.RawLine) {
 	}
 
 	s.totalLen.Store(int64(s.store.Len()))
+}
+
+// handleFFmpegKVLocked processes an already-classified ffmpeg key=value pair.
+// The first such pair opens a new TypeFFmpegProgress line and registers it as
+// active; subsequent pairs mutate that line in place. Returns true when the
+// caller should stop — i.e. the line was consumed and must not flow through
+// the normal parser path.
+//
+// Must be called with s.mu held (write).
+func (s *sharedState) handleFFmpegKVLocked(key, value string, fromStderr bool) bool {
+	// No active line: open one. A bare `progress=end` with nothing before it
+	// would produce a 100% bar instantly — we still accept it so loglens
+	// mirrors whatever ffmpeg actually emitted, however degenerate.
+	if s.activeFFmpegIdx < 0 {
+		l := &line.LogLine{
+			Type:       line.TypeFFmpegProgress,
+			FromStderr: fromStderr,
+			Meta:       &line.FFmpegMeta{},
+		}
+		s.parser.AppendExternal(l)
+		s.store.Append(l)
+		idx := s.store.Len() - 1
+		s.activeFFmpegIdx = idx
+
+		meta := l.Meta.(*line.FFmpegMeta)
+		_, ended := applyFFmpegKV(meta, key, value)
+		l.Raw = renderFFmpegRaw(meta)
+		s.store.UpdateStub(idx)
+
+		rows := visualRowsForLineStatic(s.store, idx, s.width, s.wrapMode, false, nil)
+		s.appendVisRowsLocked(idx, rows)
+
+		beg, end := nonWSRange(l.Raw)
+		s.minimapExtents = append(s.minimapExtents, lineExtent{beg: beg, end: end})
+		if end > s.minimapMaxCol {
+			s.minimapMaxCol = end
+		}
+
+		s.totalLen.Store(int64(s.store.Len()))
+		if ended {
+			s.activeFFmpegIdx = -1
+		}
+		return true
+	}
+
+	// Active line exists: mutate in place. Index is always the tail while
+	// active, so the chunk is Hot and UpdateStub / Get work without I/O.
+	idx := s.activeFFmpegIdx
+	l := s.store.Get(idx)
+	meta, ok := l.Meta.(*line.FFmpegMeta)
+	if !ok {
+		// Defensive: something clobbered Meta. Reset and fall through.
+		s.activeFFmpegIdx = -1
+		return false
+	}
+	blockEnd, ended := applyFFmpegKV(meta, key, value)
+	if blockEnd {
+		l.Raw = renderFFmpegRaw(meta)
+		s.store.UpdateStub(idx)
+		s.recomputeVisRowsLocked(idx, false, nil)
+		if idx < len(s.minimapExtents) {
+			beg, end := nonWSRange(l.Raw)
+			s.minimapExtents[idx] = lineExtent{beg: beg, end: end}
+			if end > s.minimapMaxCol {
+				s.minimapMaxCol = end
+			}
+		}
+	}
+	if ended {
+		s.activeFFmpegIdx = -1
+	}
+	return true
+}
+
+// freezeActiveFFmpegLocked locks in whatever percentage the live progress line
+// currently shows. Called when a non-ffmpeg line arrives mid-stream, so the
+// bar stays on screen with its last value rather than growing forever.
+//
+// Must be called with s.mu held (write).
+func (s *sharedState) freezeActiveFFmpegLocked() {
+	if s.activeFFmpegIdx < 0 {
+		return
+	}
+	idx := s.activeFFmpegIdx
+	l := s.store.Get(idx)
+	if meta, ok := l.Meta.(*line.FFmpegMeta); ok && !meta.Ended {
+		meta.Frozen = true
+		l.Raw = renderFFmpegRaw(meta)
+		s.store.UpdateStub(idx)
+		s.recomputeVisRowsLocked(idx, false, nil)
+		if idx < len(s.minimapExtents) {
+			beg, end := nonWSRange(l.Raw)
+			s.minimapExtents[idx] = lineExtent{beg: beg, end: end}
+			if end > s.minimapMaxCol {
+				s.minimapMaxCol = end
+			}
+		}
+	}
+	s.activeFFmpegIdx = -1
 }
 
 // visualRowsForLineStatic is the lock-free equivalent of model.visualRowsForLine.

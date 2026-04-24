@@ -12,6 +12,7 @@ const (
 	TypeGoTestResult
 	TypeWarning
 	TypeKubeResource
+	TypeFFmpegProgress
 )
 
 // Source indicates where a line originated.
@@ -99,6 +100,31 @@ type TableMeta struct {
 // WarningMeta holds warning/error prefix metadata.
 type WarningMeta struct {
 	Level string // Warning, Error, FATAL, INFO, DEBUG
+}
+
+// FFmpegMeta holds the coalesced state of an ffmpeg -progress stream. A single
+// LogLine with TypeFFmpegProgress represents the whole stream — subsequent
+// key=value blocks mutate this meta in place instead of producing new lines,
+// so the progress bar fills up on one row rather than spamming the log.
+//
+// Ended is set when a `progress=end` block arrives. Frozen is set when the
+// stream is abandoned (non-ffmpeg line arrives before end) — in both cases
+// the line becomes immutable and is treated as any other log entry.
+type FFmpegMeta struct {
+	Frame      int
+	Fps        string
+	Bitrate    string
+	Speed      string
+	OutTime    string
+	OutTimeUs  int64
+	TotalSize  int64
+	DupFrames  int
+	DropFrames int
+
+	BlockCount int
+	Percent    float64
+	Ended      bool
+	Frozen     bool
 }
 
 // LineStub holds lightweight per-line metadata that stays in memory even when
