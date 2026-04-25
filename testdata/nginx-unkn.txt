@@ -1,0 +1,169 @@
+I0425 00:17:20.844360       7 store.go:439] "Ignoring ingress because of error while validating ingress class" ingress="asd/asd-3" error="ingress does not contain a valid IngressClass"
+W0425 00:17:20.779656       7 validators.go:243] validation error on ingress asd/x.example.com: annotation proxy-read-timeout contains invalid value 300s
+W0425 00:17:20.779380       7 validators.go:243] validation error on ingress yyy/x.example.org: annotation proxy-read-timeout contains invalid value 300s
+I0424 23:50:08.933996       7 store.go:439] "Ignoring ingress because of error while validating ingress class" ingress="asd/asd-3" error="ingress does not contain a valid IngressClass"
+W0424 23:50:08.892583       7 validators.go:243] validation error on ingress asd/x.example.com: annotation proxy-read-timeout contains invalid value 300s
+W0424 23:50:08.892412       7 validators.go:243] validation error on ingress yyy/x.example.org: annotation proxy-read-timeout contains invalid value 300s
+W0424 14:28:43.555568       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.555564       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.555531       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.552745       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.552742       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.552732       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.552178       6 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.552176       6 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.552164       6 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.551195       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.551187       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.551152       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.549078       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.548545       6 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.548515       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.548485       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.548446       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.548220       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.548212       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.548187       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.547634       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.547631       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.547605       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.547257       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.547252       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.547231       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.546209       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.546205       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.546190       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.545302       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.545296       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.545268       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.544353       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.544350       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.544332       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.544067       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.544060       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.544032       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543816       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543809       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543787       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543721       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543718       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543701       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.543584       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.542386       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.542204       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.542189       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.541288       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.541284       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.541264       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.541124       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.540485       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.540479       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.540456       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.540041       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.539953       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.539222       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.539219       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.539205       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.538959       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.538783       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.538780       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.538767       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.538662       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.538141       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.537923       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.537623       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.537621       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.537610       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.537368       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.537365       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.537336       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:43.535706       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.535245       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.535288       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.535274       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.534593       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.534117       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:43.533866       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.914273       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.914258       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.914215       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.911106       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.911096       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.911046       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.909959       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.909953       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.909921       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.909479       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.909474       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.909456       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908957       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908951       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908924       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908253       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908243       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908204       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908217       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908211       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.908174       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907673       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907670       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907630       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907544       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907542       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907528       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907524       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907518       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907497       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.901473       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.907138       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907130       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.907104       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.906253       6 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.906247       6 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.906224       6 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.906065       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.906061       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.906047       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904897       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904889       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904865       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904498       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904495       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904480       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904306       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904303       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904289       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904219       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904216       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.904200       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903990       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903987       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903905       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903833       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903829       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903813       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.903253       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.902770       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.902716       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.902573       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.902348       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.902345       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.902334       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.901599       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.901543       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.900655       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.900214       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.900089       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899921       6 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899809       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899708       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899640       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899670       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899603       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.899342       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.898712       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.898681       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.898103       7 backend_ssl.go:47] Error obtaining X.509 certificate: no object matching key "x/letsencrypt-abc-def" in local store
+W0424 14:28:07.697079       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.697077       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate
+W0424 14:28:07.697056       7 controller.go:1455] Error getting SSL certificate "x/letsencrypt-abc-def": local SSL certificate x/letsencrypt-abc-def was not found. Using default certificate

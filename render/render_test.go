@@ -36,6 +36,12 @@ func testStyles() *Styles {
 		K8sResource:     lipgloss.NewStyle().Foreground(lipgloss.Color("33")),
 		K8sEventNormal:  lipgloss.NewStyle().Foreground(lipgloss.Color("42")),
 		K8sEventWarning: lipgloss.NewStyle().Foreground(lipgloss.Color("220")),
+		LevelError:      lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true),
+		LevelWarn:       lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true),
+		LevelInfo:       lipgloss.NewStyle().Foreground(lipgloss.Color("45")).Bold(true),
+		LevelDebug:      lipgloss.NewStyle().Faint(true),
+		NginxField:      lipgloss.NewStyle().Foreground(lipgloss.Color("75")),
+		IPAddr:          lipgloss.NewStyle().Foreground(lipgloss.Color("141")),
 		TableHeader:     lipgloss.NewStyle().Bold(true),
 		TableCell:       lipgloss.NewStyle(),
 		TableSep:        lipgloss.NewStyle().Faint(true),
@@ -365,5 +371,37 @@ func TestBuildJSONChildrenArray(t *testing.T) {
 	children := BuildJSONChildren(arr, 0, nil)
 	if len(children) != 3 {
 		t.Errorf("expected 3 children, got %d", len(children))
+	}
+}
+
+// TestRenderNginxLogPreservesText exercises the full render path for an nginx
+// error_log line and confirms all the segment text survives. ANSI styling is
+// not asserted — lipgloss strips colors when no TTY is detected, but the
+// segment styling is covered by parser/highlight_test.go.
+func TestRenderNginxLogPreservesText(t *testing.T) {
+	raw := "2026/04/25 07:06:30 [crit] 835#835: *33051669 SSL_do_handshake() failed, client: 10.0.0.28, server: 0.0.0.0:443"
+	l := &line.LogLine{
+		Raw:  raw,
+		Type: line.TypePlain,
+		Segments: []line.Segment{
+			{Text: "2026/04/25 07:06:30", Style: "datetime"},
+			{Text: " ", Style: "plain"},
+			{Text: "[crit]", Style: "level-error"},
+			{Text: " 835#835: *33051669 SSL_do_handshake() failed, ", Style: "plain"},
+			{Text: "client:", Style: "nginx-field"},
+			{Text: " ", Style: "plain"},
+			{Text: "10.0.0.28", Style: "ip"},
+			{Text: ", ", Style: "plain"},
+			{Text: "server:", Style: "nginx-field"},
+			{Text: " ", Style: "plain"},
+			{Text: "0.0.0.0", Style: "ip"},
+			{Text: ":443", Style: "plain"},
+		},
+	}
+	out := RenderLine(l, 300, false, testStyles())
+	for _, want := range []string{"[crit]", "10.0.0.28", "client:", "server:", "0.0.0.0", "2026/04/25 07:06:30"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in output, got %q", want, out)
+		}
 	}
 }

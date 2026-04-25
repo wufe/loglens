@@ -41,6 +41,19 @@ type Styles struct {
 	K8sEventNormal  lipgloss.Style
 	K8sEventWarning lipgloss.Style
 
+	// Severity levels — used for nginx error_log brackets ([crit], [error], ...)
+	// and klog single-letter prefixes (W0424, I0425, ...).
+	LevelError lipgloss.Style
+	LevelWarn  lipgloss.Style
+	LevelInfo  lipgloss.Style
+	LevelDebug lipgloss.Style
+
+	// nginx field marker (client:, server:, upstream:, host:, ...)
+	NginxField lipgloss.Style
+
+	// IPv4 address
+	IPAddr lipgloss.Style
+
 	// Table
 	TableHeader lipgloss.Style
 	TableCell   lipgloss.Style
@@ -102,6 +115,14 @@ func DefaultStyles() *Styles {
 		K8sResource:     lipgloss.NewStyle().Foreground(lipgloss.Color("33")).Underline(true),
 		K8sEventNormal:  lipgloss.NewStyle().Foreground(lipgloss.Color("42")),
 		K8sEventWarning: lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true),
+
+		LevelError: lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true),
+		LevelWarn:  lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true),
+		LevelInfo:  lipgloss.NewStyle().Foreground(lipgloss.Color("45")).Bold(true),
+		LevelDebug: lipgloss.NewStyle().Faint(true),
+
+		NginxField: lipgloss.NewStyle().Foreground(lipgloss.Color("75")),
+		IPAddr:     lipgloss.NewStyle().Foreground(lipgloss.Color("141")),
 
 		TableHeader: lipgloss.NewStyle().Bold(true),
 		TableCell:   lipgloss.NewStyle(),

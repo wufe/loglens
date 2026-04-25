@@ -116,6 +116,18 @@ func renderSegment(seg line.Segment, styles *Styles) string {
 		return styles.K8sEventNormal.Render(seg.Text)
 	case "k8s-event-warning":
 		return styles.K8sEventWarning.Render(seg.Text)
+	case "level-error":
+		return styles.LevelError.Render(seg.Text)
+	case "level-warn":
+		return styles.LevelWarn.Render(seg.Text)
+	case "level-info":
+		return styles.LevelInfo.Render(seg.Text)
+	case "level-debug":
+		return styles.LevelDebug.Render(seg.Text)
+	case "nginx-field":
+		return styles.NginxField.Render(seg.Text)
+	case "ip":
+		return styles.IPAddr.Render(seg.Text)
 	case "json":
 		return styles.JSONString.Render(seg.Text)
 	case "plain":

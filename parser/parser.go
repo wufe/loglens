@@ -39,6 +39,12 @@ func (p *Parser) Parse(raw string, fromStderr bool) ParseResult {
 	if strings.IndexByte(cleaned, 0x1b) >= 0 {
 		cleaned = stripansi.Strip(cleaned)
 	}
+	// Replace stray control bytes (CR, NUL, BS, etc.) with a benign placeholder.
+	// nginx error_log lines that capture raw network frames (broken headers,
+	// PROXY-protocol probes) routinely contain these — left as-is they move
+	// the terminal cursor or desync lipgloss's width math, which then corrupts
+	// the rendered viewport.
+	cleaned = sanitizeControlBytes(cleaned)
 	var tabGaps []line.TabGap
 	cleaned, tabGaps = expandTabs(cleaned, 8)
 
@@ -223,6 +229,32 @@ func (p *Parser) SearchReverse(query string, startIdx int) int {
 		}
 	}
 	return -1
+}
+
+// sanitizeControlBytes replaces ASCII control bytes (other than tab and
+// newline) and DEL with '?'. Tab is preserved for expandTabs; newline shouldn't
+// appear here (the ingestor splits on it) but is preserved defensively. The
+// substitution is byte-for-byte so segment indices computed downstream stay
+// valid.
+func sanitizeControlBytes(s string) string {
+	hit := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < 0x20 && c != '\t' && c != '\n') || c == 0x7f {
+			hit = true
+			break
+		}
+	}
+	if !hit {
+		return s
+	}
+	b := []byte(s)
+	for i, c := range b {
+		if (c < 0x20 && c != '\t' && c != '\n') || c == 0x7f {
+			b[i] = '?'
+		}
+	}
+	return string(b)
 }
 
 // expandTabs replaces each tab with spaces to the next tab stop, and returns

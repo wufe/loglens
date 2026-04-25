@@ -1,0 +1,64 @@
+2026/04/25 07:11:45 [error] 864#864: *31642313 broken header: "GET /a/b/c.bak HTTP/1.0
+2026/04/25 07:11:44 [error] 836#836: *32845027 broken header: "l          " while reading PROXY protocol, client: 203.0.113.10, server: 0.0.0.0:443
+2026/04/25 07:11:37 [error] 838#838: *32844771 broken header: "   junk-payload-a    " while reading PROXY protocol, client: 203.0.113.10, server: 0.0.0.0:443
+2026/04/25 07:11:33 [error] 868#868: *31641930 broken header: "   junk-payload-b
+2026/04/25 07:11:33 [error] 864#864: *31641913 broken header: "  junk-payload-c
+2026/04/25 07:11:33 [error] 861#861: *31641900 broken header: "  junk-payload-d
+2026/04/25 07:11:32 [error] 836#836: *32844612 broken header: "HELP
+2026/04/25 07:11:32 [error] 840#840: *32844599 broken header: "EHLO
+2026/04/25 07:11:31 [error] 868#868: *31641861 broken header: "            " while reading PROXY protocol, client: 203.0.113.10, server: 0.0.0.0:443
+2026/04/25 07:11:31 [error] 864#864: *31641845 broken header: "          probe-marker-a   " while reading PROXY protocol, client: 203.0.113.10, server: 0.0.0.0:443
+2026/04/25 07:11:31 [error] 838#838: *32844546 broken header: "  junk-payload-e                    " while reading PROXY protocol, client: 203.0.113.10, server: 0.0.0.0:443
+2026/04/25 07:11:30 [error] 862#862: *31641807 broken header: "OPTIONS * RTSP/1.0
+2026/04/25 07:11:30 [error] 839#839: *32844516 broken header: "OPTIONS / HTTP/1.0
+2026/04/25 07:11:29 [error] 837#837: *32844502 broken header: "GET / HTTP/1.1
+2026/04/25 07:11:29 [error] 868#868: *31641772 broken header: "
+2026/04/25 07:11:19 [error] 836#836: *32844129 broken header: "  junk-payload-f
+2026/04/25 07:11:17 [error] 837#837: *32844087 broken header: "  junk-payload-g
+2026/04/25 07:11:17 [error] 864#864: *31641358 broken header: " junk-payload-h
+2026/04/25 07:11:17 [error] 866#866: *31641345 broken header: "  junk-payload-i   /
+2026/04/25 07:10:17 [error] 867#867: *31639288 broken header: "GET / HTTP/1.0
+2026/04/25 07:05:12 [error] 838#838: *32670340 broken header: "GET / HTTP/1.0
+2026/04/25 07:01:35 [error] 843#843: *32686259 broken header: "GET /a/b/c.bak HTTP/1.0
+2026/04/25 07:01:35 [error] 836#836: *32686238 broken header: "l          " while reading PROXY protocol, client: 203.0.113.20, server: 0.0.0.0:443
+2026/04/25 07:01:35 [error] 840#840: *32686237 broken header: "   junk-payload-a    " while reading PROXY protocol, client: 203.0.113.20, server: 0.0.0.0:443
+2026/04/25 07:01:35 [error] 837#837: *32686232 broken header: "   junk-payload-b
+2026/04/25 07:01:35 [error] 841#841: *32686227 broken header: "  junk-payload-c
+2026/04/25 07:01:35 [error] 836#836: *32686226 broken header: "  junk-payload-d
+2026/04/25 07:01:33 [error] 837#837: *32660371 broken header: "HELP
+2026/04/25 07:01:33 [error] 843#843: *32686188 broken header: "EHLO
+2026/04/25 07:01:30 [error] 842#842: *32660260 broken header: "            " while reading PROXY protocol, client: 203.0.113.20, server: 0.0.0.0:443
+2026/04/25 07:01:30 [error] 837#837: *32660251 broken header: "          probe-marker-a   " while reading PROXY protocol, client: 203.0.113.20, server: 0.0.0.0:443
+2026/04/25 07:01:29 [error] 838#838: *32686024 broken header: "  junk-payload-e                    " while reading PROXY protocol, client: 203.0.113.20, server: 0.0.0.0:443
+2026/04/25 07:01:29 [error] 835#835: *32660202 broken header: "OPTIONS * RTSP/1.0
+2026/04/25 07:01:28 [error] 842#842: *32686019 broken header: "OPTIONS / HTTP/1.0
+2026/04/25 07:01:28 [error] 838#838: *32686014 broken header: "GET / HTTP/1.1
+2026/04/25 07:01:28 [error] 837#837: *32686001 broken header: "
+2026/04/25 07:01:17 [error] 838#838: *32659781 broken header: "  junk-payload-f
+2026/04/25 07:01:15 [error] 837#837: *32659687 broken header: "  junk-payload-g
+2026/04/25 07:01:13 [error] 836#836: *32659682 broken header: " junk-payload-h
+2026/04/25 07:01:13 [error] 840#840: *32659653 broken header: "  junk-payload-i   /
+2026/04/25 07:00:14 [error] 842#842: *32657651 broken header: "GET / HTTP/1.0
+2026/04/25 06:59:14 [error] 838#838: *31600856 broken header: "  probe-marker-b
+2026/04/25 06:24:55 [error] 875#875: *32598845 broken header: "  junk-payload-f
+2026/04/25 06:24:52 [error] 841#841: *32600435 broken header: "  junk-payload-f
+2026/04/25 06:24:52 [error] 906#906: *32586634 broken header: "  junk-payload-g
+2026/04/25 06:24:52 [error] 856#856: *32586515 broken header: "  junk-payload-g
+2026/04/25 06:24:51 [error] 844#844: *32593241 broken header: " junk-payload-h
+2026/04/25 06:24:51 [error] 861#861: *32586502 broken header: " junk-payload-h
+2026/04/25 06:24:51 [error] 836#836: *31546021 broken header: "  junk-payload-i   /
+2026/04/25 06:24:51 [error] 857#857: *32586496 broken header: "  junk-payload-i   /
+2026/04/25 06:23:52 [error] 852#852: *32747623 broken header: "GET / HTTP/1.0
+2026/04/25 06:23:52 [error] 861#861: *32584496 broken header: "GET / HTTP/1.0
+2026/04/25 05:19:23 [error] 1667#1667: *15507905 upstream timed out (110: Operation timed out) while sending request to upstream, client: 10.0.0.33, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 05:16:23 [error] 296#296: *992319 upstream timed out (110: Operation timed out) while sending request to upstream, client: 10.0.0.30, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 05:16:07 [error] 1633#1633: *15238081 upstream timed out (110: Operation timed out) while sending request to upstream, client: 10.0.0.22, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 05:14:28 [error] 841#841: *32443068 broken header: "l          " while reading PROXY protocol, client: 203.0.113.30, server: 0.0.0.0:80
+2026/04/25 05:14:27 [error] 866#866: *32432088 broken header: "   junk-payload-a    " while reading PROXY protocol, client: 203.0.113.30, server: 0.0.0.0:80
+2026/04/25 05:14:27 [error] 863#863: *32432079 broken header: "   junk-payload-b
+2026/04/25 05:05:39 [error] 431#431: *960018 upstream timed out (110: Operation timed out) while sending request to upstream, client: 10.0.0.24, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 05:04:48 [error] 294#294: *858186 recv() failed (104: Connection reset by peer) while reading response header from upstream, client: 10.0.0.22, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 04:57:41 [error] 1766#1766: *15110916 upstream timed out (110: Operation timed out) while sending request to upstream, client: 10.0.0.33, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 04:54:33 [error] 1634#1634: *15054923 upstream timed out (110: Operation timed out) while sending request to upstream, client: 10.0.0.21, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 04:54:24 [error] 295#295: *962979 upstream prematurely closed connection while reading upstream, client: 10.0.0.22, server: x.example.com, request: "GET /a/b/c HTTP/2.0", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"
+2026/04/25 04:28:42 [error] 995#995: *17374897 recv() failed (104: Connection reset by peer) while reading response header from upstream, client: 10.0.0.32, server: x.example.com, request: "PUT /a/b/c HTTP/1.1", upstream: "http://10.0.0.99:443/a/b/c", host: "x.example.com"

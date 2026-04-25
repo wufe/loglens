@@ -19,6 +19,29 @@ var (
 	// Datetime: YYYY-MM-DD HH:MM:SS optionally with timezone
 	datetimeRe = regexp.MustCompile(`\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:\s+[+-]\d{4})?(?:\s+[A-Z]{2,5})?`)
 
+	// nginx datetime: YYYY/MM/DD HH:MM:SS — emitted by nginx error_log
+	nginxDatetimeRe = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2}`)
+
+	// nginx severity bracket: [debug] [info] [notice] [warn] [error] [crit] [alert] [emerg]
+	nginxLevelRe = regexp.MustCompile(`\[(debug|info|notice|warn|error|crit|alert|emerg)\]`)
+
+	// klog prefix at line start: I0425 00:17:20.844360 — used by k8s components
+	// (kube-apiserver, ingress-nginx controller, etc.). Letter is severity:
+	// I=info, W=warning, E=error, F=fatal, D=debug.
+	klogPrefixRe = regexp.MustCompile(`^([IWEFD])(\d{4}\s+\d{2}:\d{2}:\d{2}\.\d+)`)
+
+	// nginx field markers: client:, server:, upstream:, host:, request:, etc.
+	// Trailing class disambiguates field-marker colons from URL/HTTP colons;
+	// the highlight range trims that trailing byte to leave the colon styled
+	// alongside the keyword.
+	nginxFieldRe = regexp.MustCompile(`\b(?:client|server|upstream|host|request|referrer|subrequest):[\s"]`)
+
+	// nginx PROXY-protocol marker, appears as "while reading PROXY protocol"
+	nginxProxyProtoRe = regexp.MustCompile(`while reading PROXY protocol`)
+
+	// IPv4 address (rough — full validation isn't needed for highlighting)
+	ipv4Re = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+
 	// Source file references: file.ext:linenum
 	sourceRefRe = regexp.MustCompile(`\b([\w./-]+\.(?:go|py|js|ts|tsx|jsx|rs|java|rb|c|cpp|h|hpp|cs|swift|kt|scala|sh|bash|zsh|yaml|yml|toml|json|xml|html|css|scss|sql|proto|ex|exs|hs|lua|r|pl|pm|php)):(\d+)\b`)
 
@@ -85,9 +108,35 @@ func detectWarning(raw string) *line.LogLine {
 func highlightSegments(raw string) []line.Segment {
 	var highlights []highlight
 
+	// nginx severity bracket — checked early so the level is colored even
+	// when surrounded by other tokens (e.g. timestamp before, pid after).
+	for _, m := range nginxLevelRe.FindAllStringSubmatchIndex(raw, -1) {
+		if m[2] < 0 || m[3] < 0 {
+			continue
+		}
+		level := raw[m[2]:m[3]]
+		highlights = append(highlights, highlight{start: m[0], end: m[1], style: nginxLevelStyle(level)})
+	}
+
+	// klog prefix at line start (e.g. W0424 14:28:43.555568)
+	if m := klogPrefixRe.FindStringSubmatchIndex(raw); m != nil {
+		levelChar := raw[m[2]:m[3]]
+		highlights = append(highlights, highlight{start: m[2], end: m[3], style: klogLevelStyle(levelChar)})
+		highlights = append(highlights, highlight{start: m[4], end: m[5], style: "datetime"})
+	}
+
+	// nginx datetime (YYYY/MM/DD HH:MM:SS)
+	for _, loc := range nginxDatetimeRe.FindAllStringIndex(raw, -1) {
+		if !overlapsAny(highlights, loc[0], loc[1]) {
+			highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "datetime"})
+		}
+	}
+
 	// Datetime (check before time to avoid overlap)
 	for _, loc := range datetimeRe.FindAllStringIndex(raw, -1) {
-		highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "datetime"})
+		if !overlapsAny(highlights, loc[0], loc[1]) {
+			highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "datetime"})
+		}
 	}
 
 	// Time HH:MM:SS
@@ -98,6 +147,30 @@ func highlightSegments(raw string) []line.Segment {
 			if !overlapsAny(highlights, m[2], m[3]) {
 				highlights = append(highlights, highlight{start: m[2], end: m[3], style: "timestamp"})
 			}
+		}
+	}
+
+	// nginx field markers — client:, server:, upstream:, host:, request:, ...
+	// The match ends at the trailing whitespace/quote; trim that byte off
+	// the highlight range so only `keyword:` is styled.
+	for _, loc := range nginxFieldRe.FindAllStringIndex(raw, -1) {
+		end := loc[1] - 1
+		if !overlapsAny(highlights, loc[0], end) {
+			highlights = append(highlights, highlight{start: loc[0], end: end, style: "nginx-field"})
+		}
+	}
+
+	// nginx PROXY protocol marker
+	for _, loc := range nginxProxyProtoRe.FindAllStringIndex(raw, -1) {
+		if !overlapsAny(highlights, loc[0], loc[1]) {
+			highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "nginx-field"})
+		}
+	}
+
+	// IPv4 addresses
+	for _, loc := range ipv4Re.FindAllStringIndex(raw, -1) {
+		if !overlapsAny(highlights, loc[0], loc[1]) {
+			highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "ip"})
 		}
 	}
 
@@ -247,6 +320,36 @@ func isLikelyK8sResource(s string) bool {
 	}
 
 	return false
+}
+
+// nginxLevelStyle maps an nginx error_log severity word to a render style key.
+func nginxLevelStyle(level string) string {
+	switch level {
+	case "crit", "alert", "emerg", "error":
+		return "level-error"
+	case "warn":
+		return "level-warn"
+	case "info", "notice":
+		return "level-info"
+	case "debug":
+		return "level-debug"
+	}
+	return "plain"
+}
+
+// klogLevelStyle maps a klog severity letter (I/W/E/F/D) to a render style key.
+func klogLevelStyle(c string) string {
+	switch c {
+	case "E", "F":
+		return "level-error"
+	case "W":
+		return "level-warn"
+	case "I":
+		return "level-info"
+	case "D":
+		return "level-debug"
+	}
+	return "plain"
 }
 
 func sortHighlights(hs []highlight) {

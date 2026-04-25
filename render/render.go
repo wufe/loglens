@@ -42,6 +42,13 @@ type Styles struct {
 	K8sEventNormal  lipgloss.Style
 	K8sEventWarning lipgloss.Style
 
+	LevelError lipgloss.Style
+	LevelWarn  lipgloss.Style
+	LevelInfo  lipgloss.Style
+	LevelDebug lipgloss.Style
+	NginxField lipgloss.Style
+	IPAddr     lipgloss.Style
+
 	TableHeader lipgloss.Style
 	TableCell   lipgloss.Style
 	TableSep    lipgloss.Style
