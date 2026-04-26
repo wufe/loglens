@@ -33,7 +33,7 @@ func main() {
 		ramp        = flag.String("ramp", "linear", "ramp shape: linear | exp | step")
 		stepRates   = flag.String("steps", "", "comma-separated rates for --ramp step, e.g. 1000,5000,20000,100000")
 		stepHold    = flag.Duration("step-hold", 5*time.Second, "hold time per rate level when --ramp step")
-		shape       = flag.String("shape", "kuttl", "line shape: kuttl (embedded template) | s3json (synthetic DD/s3gw-style JSON)")
+		shape       = flag.String("shape", "kuttl", "line shape: kuttl (embedded template) | s3json (synthetic DD/s3gw-style JSON) | simplejson (short top-level JSON for stats testing; suppresses the lag prefix)")
 		templateArg = flag.String("template", "", "path to a template log file (overrides embedded; only used with --shape kuttl)")
 		shuffle     = flag.Bool("shuffle", false, "shuffle template lines before use (only with --shape kuttl)")
 		noPrefix    = flag.Bool("no-prefix", false, "disable the [LLB:<nano>] lag-measurement prefix")
@@ -72,8 +72,18 @@ func main() {
 		}
 	case "s3json":
 		nextLine = buildS3JSONLine
+	case "simplejson":
+		nextLine = buildSimpleJSONLine
+		// Force-suppress the lag prefix unless the user passed --no-prefix
+		// explicitly. simplejson is meant for feeding loglens's JSON
+		// detector cleanly; an `[LLB:<nano>] ` prefix turns each line into
+		// embedded JSON instead of inline JSON, which silently breaks the
+		// "Enter on a JSON field" path the stats wizard depends on.
+		if !flagWasPassed("no-prefix") {
+			*noPrefix = true
+		}
 	default:
-		fmt.Fprintf(os.Stderr, "loggen: unknown shape %q (want kuttl|s3json)\n", *shape)
+		fmt.Fprintf(os.Stderr, "loggen: unknown shape %q (want kuttl|s3json|simplejson)\n", *shape)
 		os.Exit(1)
 	}
 
@@ -192,6 +202,20 @@ loop:
 	}
 }
 
+// flagWasPassed reports whether the user passed `name` on the command line
+// (as opposed to the flag silently using its default). simplejson uses this
+// to flip --no-prefix to true only when the user hasn't expressed an
+// explicit preference.
+func flagWasPassed(name string) bool {
+	seen := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			seen = true
+		}
+	})
+	return seen
+}
+
 func loadTemplate(path string) ([]string, error) {
 	src := embeddedTemplate
 	if path != "" {
@@ -300,5 +324,8 @@ Examples:
     | loglens --bench out.txt
 
   # Interleave synthetic ffmpeg -progress sessions (some complete, some abort):
-  loggen --ffmpeg --start-rate 200 --end-rate 200 --duration 20s | loglens`)
+  loggen --ffmpeg --start-rate 200 --end-rate 200 --duration 20s | loglens
+
+  # Stream short top-level JSON for testing the stats feature (no LLB prefix):
+  loggen --shape simplejson --start-rate 200 --end-rate 1000 --duration 60s | loglens`)
 }

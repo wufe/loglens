@@ -12,9 +12,27 @@ func isKeyDown(msg tea.KeyMsg) bool {
 	return msg.String() == "down" || msg.String() == "j"
 }
 
-// isKeyRight returns true for right/l/enter keys.
+// isKeyRight returns true for right/l keys. Enter is handled separately so
+// it can open the field action modal when the cursor sits on a JSON child.
 func isKeyRight(msg tea.KeyMsg) bool {
-	return msg.String() == "right" || msg.String() == "l" || msg.String() == "enter"
+	return msg.String() == "right" || msg.String() == "l"
+}
+
+// isKeyEnter returns true for the enter key.
+func isKeyEnter(msg tea.KeyMsg) bool {
+	return msg.String() == "enter"
+}
+
+// isKeyTab returns true for the tab key — toggles focus between log viewport
+// and stats container.
+func isKeyTab(msg tea.KeyMsg) bool {
+	return msg.String() == "tab"
+}
+
+// isKeyZoom returns true for the "z" key — toggles full-height for the
+// currently focused pane (logs or stats).
+func isKeyZoom(msg tea.KeyMsg) bool {
+	return msg.String() == "z"
 }
 
 // isKeyLeft returns true for left/h/esc keys.

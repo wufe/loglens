@@ -5,6 +5,7 @@ import (
 	"loglens/input"
 	"loglens/line"
 	"loglens/render"
+	"loglens/stats"
 	"loglens/store"
 	"strings"
 	"time"
@@ -70,7 +71,40 @@ type model struct {
 	noFollow    bool
 
 	bench *benchLogger
+
+	// Toast: short-lived informational message rendered in the status bar.
+	// statusMsg lives on the existing field; statusMsgUntil bounds its
+	// visible lifetime so the renderer auto-clears expired messages without
+	// any background timer.
+	statusMsgUntil time.Time
+
+	// Modal stack for the field-action / stat-setup wizard. nil = no modal.
+	modal *modalState
+
+	// Stats subsystem: when statsMgr is non-nil and has at least one stat,
+	// the viewport splits horizontally to expose a stats pane below the logs.
+	statsMgr        *stats.Manager
+	statsLayout     statsLayoutMode
+	statsFocused    bool // true when key events drive the stats pane (tab toggles)
+	statsBoxOffset  int  // leftmost stat box currently visible in the row
+	statsBoxFocused int  // index of the focused stat box (within statsMgr.All())
 }
+
+// statsLayoutMode controls how vertical space is split between the log
+// viewport and the stats container.
+type statsLayoutMode int
+
+const (
+	// statsLayoutSplit is the default once at least one stat exists: logs
+	// take 2/3, stats take 1/3 of the available height.
+	statsLayoutSplit statsLayoutMode = iota
+	// statsLayoutFullLogs hides the stats pane entirely (z toggle while
+	// focused on logs). Stats keep updating in the background.
+	statsLayoutFullLogs
+	// statsLayoutFullStats hides the log viewport (z toggle while focused
+	// on stats).
+	statsLayoutFullStats
+)
 
 func initialModel(src input.InputSource, noFollow bool, bench *benchLogger, maxDiskCap int64) model {
 	ti := textinput.New()
@@ -128,6 +162,8 @@ func initialModel(src input.InputSource, noFollow bool, bench *benchLogger, maxD
 	}
 
 	shared := newSharedState(lineStore)
+	statsMgr := stats.NewManager()
+	shared.statsMgr.Store(statsMgr)
 	var ig *ingestor
 	if src != nil {
 		ig = newIngestor(shared, src, bench)
@@ -146,7 +182,15 @@ func initialModel(src input.InputSource, noFollow bool, bench *benchLogger, maxD
 		rStyles:     rs,
 		noFollow:    noFollow,
 		bench:       bench,
+		statsMgr:    statsMgr,
+		statsLayout: statsLayoutSplit,
 	}
+}
+
+// showToast surfaces a transient message in the status bar for ~2s.
+func (m *model) showToast(msg string) {
+	m.statusMsg = msg
+	m.statusMsgUntil = time.Now().Add(2 * time.Second)
 }
 
 func tickCmd() tea.Cmd {
@@ -229,6 +273,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if m.inputSrc != nil {
 						m.inputSrc.Stop()
 					}
+					if m.statsMgr != nil {
+						m.statsMgr.Stop()
+					}
 					m.s.store.Close()
 					return m, tea.Quit
 				}
@@ -264,8 +311,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.modal != nil {
+			return m.updateModal(msg)
+		}
 		if m.searchMode {
 			return m.updateSearchMode(msg)
+		}
+		if m.statsFocused {
+			return m.updateStatsMode(msg)
 		}
 		return m.updateNormalMode(msg)
 	}
@@ -313,12 +366,15 @@ func (m model) updateSearchMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) updateNormalMode(msg tea.KeyMsg) (retModel tea.Model, retCmd tea.Cmd) {
 	// Quit is handled outside the shared lock because ingestor.stop() waits
 	// on the ingestor goroutine, which itself needs the lock to drain.
-	if isKeyQuit(msg) {
+	if isKeyQuit(msg) && m.modal == nil {
 		if m.ingestor != nil {
 			m.ingestor.stop()
 		}
 		if m.inputSrc != nil {
 			m.inputSrc.Stop()
+		}
+		if m.statsMgr != nil {
+			m.statsMgr.Stop()
 		}
 		m.s.store.Close()
 		return m, tea.Quit
@@ -363,6 +419,49 @@ func (m model) updateNormalMode(msg tea.KeyMsg) (retModel tea.Model, retCmd tea.
 	}()
 
 	switch {
+	case isKeyEnter(msg):
+		// Cursor on a JSON child: open the field action modal.
+		if len(m.cursorPath) > 0 && m.cursor >= 0 && m.cursor < m.store.Len() {
+			if m.openFieldActionModal() {
+				break
+			}
+		}
+		// Otherwise, preserve historical behaviour (expand or drill into
+		// the JSON tree) so existing muscle memory still works on lines
+		// where there's no field selection yet.
+		if m.cursor >= 0 && m.cursor < m.store.Len() {
+			l := m.store.Get(m.cursor)
+			if l.Expandable && !l.Expanded {
+				expandAndPopulate(l)
+				if l.Children != nil && len(l.Children) > 0 {
+					m.cursorPath = []int{0}
+				}
+				m.s.recomputeVisRowsLocked(m.cursor, true, m.cursorPath)
+				m.adjustOffsetLocked()
+			}
+		}
+
+	case isKeyTab(msg):
+		// Switch focus between log viewport and stats pane. No-op when no
+		// stats exist (the pane isn't rendered).
+		if m.statsMgr != nil && len(m.statsMgr.All()) > 0 {
+			m.statsFocused = true
+			if m.statsLayout == statsLayoutFullLogs {
+				m.statsLayout = statsLayoutSplit
+			}
+		}
+
+	case isKeyZoom(msg):
+		// Toggle full-height for the focused pane (logs side here).
+		if m.statsMgr != nil && len(m.statsMgr.All()) > 0 {
+			if m.statsLayout == statsLayoutFullLogs {
+				m.statsLayout = statsLayoutSplit
+			} else {
+				m.statsLayout = statsLayoutFullLogs
+			}
+			m.adjustOffsetLocked()
+		}
+
 	case isKeyUp(msg):
 		if m.store.Len() == 0 {
 			break
@@ -803,6 +902,19 @@ func (m model) viewportHeight() int {
 	if m.searchMode {
 		h-- // search bar
 	}
+	// Stats pane (when active) eats into the log viewport. statsAreaHeight
+	// returns 0 when no stats exist or layout hides the pane, so this is a
+	// no-op in the default single-pane case.
+	h -= m.statsAreaHeight()
+	// Stats-only layout drives the logs region to 0; the View skips log
+	// rendering entirely in that mode rather than reserving a phantom row.
+	if m.statsLayout == statsLayoutFullStats &&
+		m.statsMgr != nil && len(m.statsMgr.All()) > 0 {
+		if h < 0 {
+			h = 0
+		}
+		return h
+	}
 	if h < 1 {
 		h = 1
 	}
@@ -906,6 +1018,13 @@ func (m model) View() string {
 		sb.WriteByte('\n')
 	}
 
+	// Stats container (renders as multiple rows already terminated with \n
+	// internally except the final row, which we terminate here).
+	if pane := m.renderStatsPane(); pane != "" {
+		sb.WriteString(pane)
+		sb.WriteByte('\n')
+	}
+
 	// Search bar
 	if m.searchMode {
 		searchBar := m.styles.SearchBar.Width(m.width).Render("/" + m.searchInput.View())
@@ -916,7 +1035,16 @@ func (m model) View() string {
 	// Status bar
 	sb.WriteString(m.renderStatusBar())
 
-	return sb.String()
+	full := sb.String()
+
+	// Modal overlay: lipgloss.Place centers the modal box on top of the
+	// existing viewport. The underlying frame still renders so the user
+	// keeps spatial context.
+	if modal := m.renderModal(); modal != "" {
+		full = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modal)
+	}
+
+	return full
 }
 
 // overlayMinimapRows draws a braille minimap over the right edge of `rows`.
@@ -1023,6 +1151,13 @@ func (m model) renderStatusBar() string {
 
 	// Center: follow indicator, wrap indicator, EOF, exit code
 	var centerParts []string
+	// Toast: short-lived informational message takes priority in the
+	// center segment for visibility. Time-based expiration so View doesn't
+	// need to mutate state.
+	if m.statusMsg != "" && time.Now().Before(m.statusMsgUntil) {
+		centerParts = append(centerParts,
+			m.styles.StatusEOF.Render(" "+m.statusMsg+" "))
+	}
 	if m.follow {
 		centerParts = append(centerParts, m.styles.StatusFollow.Render(" FOLLOW "))
 	}

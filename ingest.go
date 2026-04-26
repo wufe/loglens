@@ -4,6 +4,7 @@ import (
 	"loglens/input"
 	"loglens/line"
 	"loglens/parser"
+	"loglens/stats"
 	"loglens/store"
 	"sync"
 	"sync/atomic"
@@ -60,6 +61,12 @@ type sharedState struct {
 	totalLen atomic.Int64
 	eof      atomic.Bool
 	exitCode atomic.Int32
+
+	// statsMgr is set by the UI when the user creates the first stat. The
+	// ingestor checks it on every appended line and forwards a pointer
+	// without blocking — non-blocking semantics are enforced inside the
+	// manager's per-stat Feed (channel send with default).
+	statsMgr atomic.Pointer[stats.Manager]
 }
 
 func newSharedState(ls *store.LineStore) *sharedState {
@@ -325,6 +332,14 @@ func (s *sharedState) ingestOneLocked(raw input.RawLine) {
 	}
 
 	s.totalLen.Store(int64(s.store.Len()))
+
+	// Stats observation: forward this freshly-parsed line to every active
+	// aggregator. Per-stat Feed is non-blocking (drops on full buffer), so
+	// the ingestor never stalls on stats processing — even at 1M lines/sec
+	// the only cost here is a slice walk + N atomic ops.
+	if mgr := s.statsMgr.Load(); mgr != nil {
+		mgr.Observe(l)
+	}
 }
 
 // handleFFmpegKVLocked processes an already-classified ffmpeg key=value pair.
