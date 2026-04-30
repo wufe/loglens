@@ -47,6 +47,21 @@ func TestSourceFileRef(t *testing.T) {
 	}
 }
 
+func TestFailedStep(t *testing.T) {
+	segments := highlightSegments("    case.go:396: failed in step 1-create-cr")
+	var got string
+	for _, seg := range segments {
+		if seg.Style == "failed-step" {
+			got = seg.Text
+			break
+		}
+	}
+	want := "failed in step 1-create-cr"
+	if got != want {
+		t.Errorf("failed-step segment = %q, want %q", got, want)
+	}
+}
+
 func TestK8sResource(t *testing.T) {
 	segments := highlightSegments("customresourcedefinition.apiextensions.k8s.io/widgets.widget.example.io unchanged")
 	found := false

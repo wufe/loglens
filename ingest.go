@@ -304,7 +304,9 @@ func (s *sharedState) ingestOneLocked(raw input.RawLine) {
 
 	// Cache the minimap silhouette while l.Raw is cheaply in hand.
 	beg, end := nonWSRange(l.Raw)
-	s.minimapExtents = append(s.minimapExtents, lineExtent{beg: beg, end: end})
+	s.minimapExtents = append(s.minimapExtents, lineExtent{
+		beg: beg, end: end, status: classifyMinimapStatus(l),
+	})
 	if end > s.minimapMaxCol {
 		s.minimapMaxCol = end
 	}

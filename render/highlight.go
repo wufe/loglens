@@ -128,6 +128,8 @@ func renderSegment(seg line.Segment, styles *Styles) string {
 		return styles.NginxField.Render(seg.Text)
 	case "ip":
 		return styles.IPAddr.Render(seg.Text)
+	case "failed-step":
+		return styles.FailedStep.Render(seg.Text)
 	case "json":
 		return styles.JSONString.Render(seg.Text)
 	case "plain":

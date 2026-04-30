@@ -145,6 +145,7 @@ func initialModel(src input.InputSource, noFollow bool, bench *benchLogger, maxD
 		LevelDebug:      s.LevelDebug,
 		NginxField:      s.NginxField,
 		IPAddr:          s.IPAddr,
+		FailedStep:      s.FailedStep,
 		TableHeader:     s.TableHeader,
 		TableCell:       s.TableCell,
 		TableSep:        s.TableSep,
@@ -1094,7 +1095,7 @@ func (m model) overlayMinimapRows(rows []string, rowLineIdx []int, vh int) []str
 		return rows
 	}
 
-	mapRows := buildMinimapRows(extents, vh, mapW, maxCol, windowLen)
+	mapRows, mapStatuses := buildMinimapRows(extents, vh, mapW, maxCol, windowLen)
 
 	// Viewport indicator: translate visible line indices into window-relative
 	// positions. If the viewport is entirely outside the window (user scrolled
@@ -1129,14 +1130,34 @@ func (m model) overlayMinimapRows(rows []string, rowLineIdx []int, vh int) []str
 		}
 	}
 
-	mapStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorMapStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("237")).
-		Foreground(lipgloss.Color("252"))
+	// rowStyles[cursor][status]: the cursor (viewport indicator) row keeps
+	// its background highlight, while non-neutral rows tint the foreground
+	// red/green so successes and failures pop against the dim silhouette.
+	const (
+		neutralFG = lipgloss.Color("240")
+		successFG = lipgloss.Color("42")
+		failureFG = lipgloss.Color("196")
+		cursorBG  = lipgloss.Color("237")
+		cursorFG  = lipgloss.Color("252")
+	)
+	base := lipgloss.NewStyle()
+	cursorBase := base.Background(cursorBG)
+	rowStyles := [2][3]lipgloss.Style{
+		{
+			base.Foreground(neutralFG),
+			base.Foreground(successFG),
+			base.Foreground(failureFG),
+		},
+		{
+			cursorBase.Foreground(cursorFG),
+			cursorBase.Foreground(successFG),
+			cursorBase.Foreground(failureFG),
+		},
+	}
 	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
 
-	return overlayMinimap(rows, mapRows, m.width, mapW,
-		viewStart, viewEnd, mapStyle, cursorMapStyle, sepStyle)
+	return overlayMinimap(rows, mapRows, mapStatuses, m.width, mapW,
+		viewStart, viewEnd, rowStyles, sepStyle)
 }
 
 func (m model) renderStatusBar() string {

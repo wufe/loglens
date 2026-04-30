@@ -48,6 +48,7 @@ type Styles struct {
 	LevelDebug lipgloss.Style
 	NginxField lipgloss.Style
 	IPAddr     lipgloss.Style
+	FailedStep lipgloss.Style
 
 	TableHeader lipgloss.Style
 	TableCell   lipgloss.Style

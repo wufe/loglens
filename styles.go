@@ -48,6 +48,9 @@ type Styles struct {
 	LevelInfo  lipgloss.Style
 	LevelDebug lipgloss.Style
 
+	// "failed in step <name>" headline emitted by go test e2e frameworks.
+	FailedStep lipgloss.Style
+
 	// nginx field marker (client:, server:, upstream:, host:, ...)
 	NginxField lipgloss.Style
 
@@ -120,6 +123,8 @@ func DefaultStyles() *Styles {
 		LevelWarn:  lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true),
 		LevelInfo:  lipgloss.NewStyle().Foreground(lipgloss.Color("45")).Bold(true),
 		LevelDebug: lipgloss.NewStyle().Faint(true),
+
+		FailedStep: lipgloss.NewStyle().Foreground(lipgloss.Color("203")).Bold(true).Underline(true),
 
 		NginxField: lipgloss.NewStyle().Foreground(lipgloss.Color("75")),
 		IPAddr:     lipgloss.NewStyle().Foreground(lipgloss.Color("141")),

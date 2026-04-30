@@ -1122,6 +1122,7 @@ func benchRenderStyles() *render.Styles {
 		LevelDebug:      s.LevelDebug,
 		NginxField:      s.NginxField,
 		IPAddr:          s.IPAddr,
+		FailedStep:      s.FailedStep,
 		TableHeader:     s.TableHeader,
 		TableCell:       s.TableCell,
 		TableSep:        s.TableSep,

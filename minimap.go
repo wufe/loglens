@@ -3,8 +3,19 @@ package main
 import (
 	"strings"
 
+	"loglens/line"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+)
+
+// Per-line status tracked alongside the silhouette so the minimap can tint
+// rows by outcome. Failure outranks success during row aggregation, so a
+// single error in a busy row stays visible.
+const (
+	statusNeutral uint8 = 0
+	statusSuccess uint8 = 1
+	statusFailure uint8 = 2
 )
 
 // Minimap constants — tuned for VS-Code-like proportions in a terminal.
@@ -25,10 +36,51 @@ const (
 
 // lineExtent describes the horizontal span of non-whitespace content on a
 // single log line. beg == -1 means the line is empty/whitespace-only or
-// hidden, and should contribute no dots to the minimap.
+// hidden, and should contribute no dots to the minimap. status carries the
+// success/failure classification for row tinting.
 type lineExtent struct {
-	beg int
-	end int
+	beg    int
+	end    int
+	status uint8
+}
+
+// classifyMinimapStatus inspects a parsed line and returns whether it
+// represents a clear success, a clear failure, or neither.
+//
+// Success is reserved for explicit pass markers (test PASS, package "ok ...")
+// — informational severities like INFO or k8s "Normal" events are routine
+// activity, not outcomes, so they stay neutral rather than flooding the map
+// with green.
+//
+// Failure covers anything the renderer already flags as a problem: error/
+// warning prefixes, failed test results, e2e step failures, nginx error/warn
+// brackets, klog W/E/F, and k8s "Warning" events.
+func classifyMinimapStatus(l *line.LogLine) uint8 {
+	if l == nil {
+		return statusNeutral
+	}
+	switch l.Type {
+	case line.TypeWarning:
+		// detectWarning only emits TypeWarning for ERROR/FATAL/WARN/WARNING
+		// prefixes — all failure-class.
+		return statusFailure
+	case line.TypeGoTestResult:
+		if meta, ok := l.Meta.(*line.GoTestMeta); ok {
+			if meta.IsFail {
+				return statusFailure
+			}
+			if meta.IsPass {
+				return statusSuccess
+			}
+		}
+	}
+	for _, seg := range l.Segments {
+		switch seg.Style {
+		case "level-error", "level-warn", "failed-step", "k8s-event-warning":
+			return statusFailure
+		}
+	}
+	return statusNeutral
 }
 
 // nonWSRange returns the [beg, end) range of non-whitespace characters in s.
@@ -59,10 +111,15 @@ func nonWSRange(s string) (int, int) {
 // if a caller pre-seeded the store without going through the ingestor); it
 // anchors the vertical scale so the map stays aligned with the viewport
 // indicator, which is computed against total line count.
-func buildMinimapRows(extents []lineExtent, height, width, maxCol, totalLines int) []string {
-	out := make([]string, height)
+//
+// rowStatus[r] aggregates the success/failure classification of every line
+// that landed in output row r, with failure outranking success so a single
+// error stays visible even in a row dominated by passing lines.
+func buildMinimapRows(extents []lineExtent, height, width, maxCol, totalLines int) (out []string, rowStatus []uint8) {
+	out = make([]string, height)
+	rowStatus = make([]uint8, height)
 	if height <= 0 || width <= 0 || totalLines <= 0 {
-		return out
+		return
 	}
 	if maxCol <= 0 {
 		maxCol = 1
@@ -117,6 +174,10 @@ func buildMinimapRows(extents []lineExtent, height, width, maxCol, totalLines in
 				cur.end = sEnd
 			}
 		}
+
+		if ext.status > rowStatus[outRow] {
+			rowStatus[outRow] = ext.status
+		}
 	}
 
 	for r := 0; r < height; r++ {
@@ -129,7 +190,7 @@ func buildMinimapRows(extents []lineExtent, height, width, maxCol, totalLines in
 		}
 		out[r] = sb.String()
 	}
-	return out
+	return
 }
 
 // dotBitsAt returns a 4-bit mask of which of the 4 vertical braille sub-rows
@@ -150,15 +211,18 @@ type rng struct{ beg, end int }
 // overlayMinimap composes `viewRows` with `mapRows` on the right side of the
 // terminal. Each rendered content row is truncated to `contentW = totalW -
 // mapW - 1` with a faint separator column, then the corresponding minimap row
-// is appended — highlighted with `cursorMapStyle` if i ∈ [viewStartRow,
-// viewEndRow) to show where the current viewport sits within the overall log.
+// is appended — styled by `rowStyles[cursor][status]` to mark both the
+// viewport position (cursor row) and the success/failure outcome of the lines
+// represented in that row.
 func overlayMinimap(
 	viewRows []string,
 	mapRows []string,
+	mapStatuses []uint8,
 	totalW int,
 	mapW int,
 	viewStartRow, viewEndRow int,
-	mapStyle, cursorMapStyle, sepStyle lipgloss.Style,
+	rowStyles [2][3]lipgloss.Style,
+	sepStyle lipgloss.Style,
 ) []string {
 	if len(mapRows) == 0 {
 		return viewRows
@@ -177,11 +241,18 @@ func overlayMinimap(
 		}
 		var mapPart string
 		if i < len(mapRows) {
-			style := mapStyle
+			cursor := 0
 			if i >= viewStartRow && i < viewEndRow {
-				style = cursorMapStyle
+				cursor = 1
 			}
-			mapPart = style.Render(mapRows[i])
+			status := uint8(0)
+			if i < len(mapStatuses) {
+				status = mapStatuses[i]
+			}
+			if status > statusFailure {
+				status = statusNeutral
+			}
+			mapPart = rowStyles[cursor][status].Render(mapRows[i])
 		} else {
 			mapPart = strings.Repeat(" ", mapW)
 		}

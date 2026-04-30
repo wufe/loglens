@@ -83,6 +83,13 @@ var (
 
 	// K8s event severity: "Normal" or "Warning" surrounded by whitespace (mid-line)
 	k8sEventSeverityRe = regexp.MustCompile(`(\s{2,})(Normal|Warning)(\s{2,})`)
+
+	// "failed in step <name>" — the headline phrase emitted by go test e2e
+	// frameworks (e2e-framework, kuttl, etc.) when a step in a test case
+	// blows up. The follow-up line carries the actual error, so highlighting
+	// the headline makes it easy to scan a wall of test output for the real
+	// failure point.
+	failedStepRe = regexp.MustCompile(`(?i)\bfailed in step\s+\S+`)
 )
 
 // detectWarning checks if a line starts with a warning/error prefix.
@@ -171,6 +178,13 @@ func highlightSegments(raw string) []line.Segment {
 	for _, loc := range ipv4Re.FindAllStringIndex(raw, -1) {
 		if !overlapsAny(highlights, loc[0], loc[1]) {
 			highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "ip"})
+		}
+	}
+
+	// "failed in step <name>" — flag e2e step-failure headlines.
+	for _, loc := range failedStepRe.FindAllStringIndex(raw, -1) {
+		if !overlapsAny(highlights, loc[0], loc[1]) {
+			highlights = append(highlights, highlight{start: loc[0], end: loc[1], style: "failed-step"})
 		}
 	}
 
