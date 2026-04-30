@@ -107,3 +107,86 @@ func TestEmbeddedJSONRejectsFormatPlaceholders(t *testing.T) {
 		t.Error("expected nil for format placeholder")
 	}
 }
+
+func TestInlineJSONLevelDetection(t *testing.T) {
+	cases := []struct {
+		name, input, wantLevel string
+	}{
+		{"error", `{"level":"error","msg":"boom"}`, "error"},
+		{"upper Error", `{"level":"Error","msg":"boom"}`, "error"},
+		{"warn", `{"level":"warn","msg":"slow"}`, "warn"},
+		{"warning", `{"level":"warning","msg":"slow"}`, "warn"},
+		{"info", `{"level":"info","msg":"hi"}`, "info"},
+		{"debug", `{"level":"debug","msg":"hi"}`, "debug"},
+		{"fatal", `{"level":"fatal","msg":"die"}`, "fatal"},
+		{"no level field", `{"msg":"hi"}`, ""},
+		{"non-string level", `{"level":3}`, ""},
+		{"unknown level", `{"level":"verbose"}`, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := detectInlineJSON(tc.input)
+			if res == nil {
+				t.Fatal("expected detection")
+			}
+			meta := res.Meta.(*line.JSONMeta)
+			if meta.Level != tc.wantLevel {
+				t.Errorf("Level = %q, want %q", meta.Level, tc.wantLevel)
+			}
+		})
+	}
+}
+
+func TestEmbeddedJSONLevelSegmentsErrorOnly(t *testing.T) {
+	raw := `gateway-operator {"level":"error","msg":"Reconciler error","ts":"2026-04-30T13:01:00Z"}`
+	res := detectEmbeddedJSON(raw)
+	if res == nil {
+		t.Fatal("expected detection")
+	}
+	meta := res.Meta.(*line.JSONMeta)
+	if meta.Level != "error" {
+		t.Fatalf("Level = %q, want error", meta.Level)
+	}
+	var sawErrorSeg bool
+	for _, seg := range res.Segments {
+		if seg.Style == "level-error" && seg.Text == `"error"` {
+			sawErrorSeg = true
+		}
+	}
+	if !sawErrorSeg {
+		t.Errorf("expected a level-error segment for the value \"error\", got segments=%v", res.Segments)
+	}
+}
+
+func TestEmbeddedJSONLevelSegmentsWarn(t *testing.T) {
+	raw := `prefix {"level":"warn","msg":"slow"}`
+	res := detectEmbeddedJSON(raw)
+	if res == nil {
+		t.Fatal("expected detection")
+	}
+	var sawWarnSeg bool
+	for _, seg := range res.Segments {
+		if seg.Style == "level-warn" && seg.Text == `"warn"` {
+			sawWarnSeg = true
+		}
+	}
+	if !sawWarnSeg {
+		t.Errorf("expected a level-warn segment for the value \"warn\", got segments=%v", res.Segments)
+	}
+}
+
+func TestFindLevelValueRange(t *testing.T) {
+	src := `{"level":"error","msg":"x"}`
+	vs, ve := findLevelValueRange([]byte(src))
+	got := src[vs:ve]
+	if got != `"error"` {
+		t.Errorf("range carved %q, want %q", got, `"error"`)
+	}
+}
+
+func TestFindLevelValueRangeNoLevel(t *testing.T) {
+	vs, ve := findLevelValueRange([]byte(`{"msg":"x"}`))
+	if vs != -1 || ve != -1 {
+		t.Errorf("expected -1,-1 for object without level, got %d,%d", vs, ve)
+	}
+}

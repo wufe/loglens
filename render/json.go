@@ -178,6 +178,14 @@ func renderJSONValueOrdered(sb *strings.Builder, v any, rawJSON []byte, styles *
 			if i < len(rawVals) {
 				childRaw = rawVals[i]
 			}
+			if k == "level" {
+				if s, isStr := child.(string); isStr {
+					quoted := fmt.Sprintf("%q", s)
+					sb.WriteString(levelStyleFor(s, styles).Render(quoted))
+					*budget -= len(quoted)
+					continue
+				}
+			}
 			renderJSONValueOrdered(sb, child, childRaw, styles, budget)
 		}
 		sb.WriteString(styles.JSONBrace.Render("}"))
@@ -229,6 +237,22 @@ func renderJSONValueOrdered(sb *strings.Builder, v any, rawJSON []byte, styles *
 		sb.WriteString(s)
 		*budget -= len(s)
 	}
+}
+
+// levelStyleFor maps a JSON "level" string value to the matching render style.
+// Falls back to JSONString when the value isn't a recognized severity word.
+func levelStyleFor(level string, styles *Styles) lipgloss.Style {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "error", "err", "fatal", "panic", "crit", "critical", "alert", "emerg":
+		return styles.LevelError
+	case "warn", "warning":
+		return styles.LevelWarn
+	case "info", "notice":
+		return styles.LevelInfo
+	case "debug", "trace":
+		return styles.LevelDebug
+	}
+	return styles.JSONString
 }
 
 func formatNumber(f float64) string {

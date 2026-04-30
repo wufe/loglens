@@ -52,6 +52,10 @@ type JSONMeta struct {
 	Keys     []string // ordered keys for objects (preserves original order)
 	RawJSON  []byte   // original JSON bytes (for preserving nested key order)
 	Prefix   string   // non-empty for multiline JSON with text before the opening brace
+	// Level is the value of the top-level "level" string field if present,
+	// lowercased and normalized — used to color the level value inline (red
+	// for error, yellow for warn) and to flag the line in the minimap.
+	Level string
 }
 
 // GoTestMeta holds parsed Go test metadata.

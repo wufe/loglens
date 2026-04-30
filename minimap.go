@@ -73,6 +73,20 @@ func classifyMinimapStatus(l *line.LogLine) uint8 {
 				return statusSuccess
 			}
 		}
+	case line.TypeJSON:
+		// JSON lines flag failure only on hard error levels — warn-level
+		// JSON entries are intentionally omitted from the minimap (yellow
+		// noise from periodic deprecation/health warnings would drown out
+		// real failures otherwise). When meta.Level is set we treat it as
+		// authoritative and skip the generic segment scan below, since the
+		// embedded JSON's level value emits a level-warn segment that
+		// would otherwise bubble up to statusFailure.
+		if meta, ok := l.Meta.(*line.JSONMeta); ok && meta.Level != "" {
+			if meta.Level == "error" || meta.Level == "fatal" {
+				return statusFailure
+			}
+			return statusNeutral
+		}
 	}
 	for _, seg := range l.Segments {
 		switch seg.Style {

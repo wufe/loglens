@@ -194,6 +194,7 @@ func (b *Buffer) DetectMultiLineJSON(allLines []*line.LogLine) []int {
 				Keys:    extractOrderedKeys(rawBytes),
 				RawJSON: rawBytes,
 				Prefix:  prefix,
+				Level:   extractJSONLevel(parsed),
 			}
 		} else {
 			// Clear any stale meta from inner group detections
