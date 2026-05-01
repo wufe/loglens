@@ -238,11 +238,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		oldCursor := m.cursor
 		if m.follow && m.s.store.Len() > 0 {
 			m.cursor = m.s.store.Len() - 1
-			m.cursorPath = nil
-			if oldCursor != m.cursor && oldCursor >= 0 && oldCursor < m.s.store.Len() {
-				m.s.recomputeVisRowsLocked(oldCursor, false, nil)
+			// Only reset cursorPath when the cursor actually moves to a new
+			// line. When the cursor stays put (no new lines since last tick),
+			// preserve the user's in-tree position — otherwise expanding a
+			// JSON line at EOF and then navigating into it is impossible:
+			// every tick (~33ms) wipes cursorPath back to the parent line.
+			if oldCursor != m.cursor {
+				m.cursorPath = nil
+				if oldCursor >= 0 && oldCursor < m.s.store.Len() {
+					m.s.recomputeVisRowsLocked(oldCursor, false, nil)
+				}
 			}
-			m.s.recomputeVisRowsLocked(m.cursor, true, nil)
+			m.s.recomputeVisRowsLocked(m.cursor, true, m.cursorPath)
 		} else if m.cursor >= 0 && m.cursor < m.s.store.Len() {
 			// Non-follow: cursor line may have been appended as non-cursor by
 			// the ingestor; refresh it so wrap counts stay accurate.

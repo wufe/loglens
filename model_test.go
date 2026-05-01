@@ -786,6 +786,75 @@ func TestCursorAutoEntersExpandedTree(t *testing.T) {
 	}
 }
 
+// In follow mode, expanding the last log line (right key) and then receiving
+// a tickMsg used to wipe cursorPath back to nil — making it impossible to
+// navigate into the freshly-expanded tree at EOF, since every ~33ms tick
+// reset the cursor to the parent line.
+func TestFollowModeTickPreservesCursorPathOnLastLine(t *testing.T) {
+	m := setupModel()
+	m.width = 200
+	m.height = 40
+
+	m = sendLine(m, "plain line before")
+	m = sendLine(m, `{"alpha": 1, "beta": 2, "gamma": 3}`)
+
+	if !m.follow || m.cursor != 1 {
+		t.Fatalf("expected follow mode with cursor on last line, got follow=%v cursor=%d", m.follow, m.cursor)
+	}
+
+	// Expand the JSON line via right arrow — should set cursorPath=[0].
+	m = sendSpecialKey(m, tea.KeyRight)
+	if !m.store.Get(1).Expanded {
+		t.Fatal("expected line 1 to be expanded after right arrow")
+	}
+	if m.cursorPath == nil || len(m.cursorPath) != 1 || m.cursorPath[0] != 0 {
+		t.Fatalf("expected cursorPath=[0] after right arrow, got %v", m.cursorPath)
+	}
+
+	// A tickMsg in follow mode must NOT clobber cursorPath when the cursor
+	// hasn't moved (no new lines have arrived).
+	m2, _ := m.Update(tickMsg(time.Now()))
+	m = m2.(model)
+	if m.cursorPath == nil || len(m.cursorPath) != 1 || m.cursorPath[0] != 0 {
+		t.Fatalf("tickMsg wiped cursorPath in follow mode at EOF: got %v", m.cursorPath)
+	}
+
+	// Now down should navigate within the tree, not be undone by ticks.
+	m = sendSpecialKey(m, tea.KeyDown)
+	if m.cursorPath == nil || m.cursorPath[0] != 1 {
+		t.Errorf("expected cursorPath=[1] after down, got %v", m.cursorPath)
+	}
+	m2, _ = m.Update(tickMsg(time.Now()))
+	m = m2.(model)
+	if m.cursorPath == nil || m.cursorPath[0] != 1 {
+		t.Errorf("tickMsg wiped cursorPath after down: got %v", m.cursorPath)
+	}
+}
+
+// When a new line arrives in follow mode, cursorPath SHOULD be cleared — the
+// cursor jumps to the new last line and any prior in-tree position is gone.
+func TestFollowModeNewLineResetsCursorPath(t *testing.T) {
+	m := setupModel()
+	m.width = 200
+	m.height = 40
+
+	m = sendLine(m, "plain line")
+	m = sendLine(m, `{"alpha": 1, "beta": 2}`)
+	m = sendSpecialKey(m, tea.KeyRight) // expand → cursorPath=[0]
+	if m.cursorPath == nil {
+		t.Fatal("expected cursorPath to be set after right")
+	}
+
+	// New line arrives → follow yanks cursor to it, cursorPath must clear.
+	m = sendLine(m, "another plain line")
+	if m.cursor != 2 {
+		t.Errorf("expected cursor=2 after new line, got %d", m.cursor)
+	}
+	if m.cursorPath != nil {
+		t.Errorf("expected cursorPath=nil after follow-jump to new line, got %v", m.cursorPath)
+	}
+}
+
 func TestCursorSkipsHiddenGroupMembers(t *testing.T) {
 	// Multiline JSON group members (non-head) should be skipped during navigation.
 	m := setupModel()
