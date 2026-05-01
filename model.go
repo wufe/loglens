@@ -735,9 +735,27 @@ func (m *model) adjustOffsetLocked() {
 		return
 	}
 
-	// Scroll down: cursor below viewport
-	if cursorAbsRow >= offsetAbsRow+vh {
-		m.setAbsoluteOffset(cursorAbsRow - vh + 1)
+	// Scroll down: cursor's last row below viewport. Use the cursor's full
+	// visual extent so multi-row cursor lines (long wrapped JSON, expanded
+	// trees) don't get clipped at the bottom — the previous comparison
+	// against cursorAbsRow alone left the cursor's wrapped tail off-screen
+	// when sitting on the last line of a long log.
+	cursorRows := m.cursorVisualHeightLocked()
+	if cursorRows < 1 {
+		cursorRows = 1
+	}
+	cursorEndRow := cursorAbsRow + cursorRows
+	if cursorEndRow > offsetAbsRow+vh {
+		// If the cursor itself is taller than the viewport, anchor at its top
+		// so the user always sees the start of the cursor line. Otherwise,
+		// scroll just enough to reveal the cursor's last row at the bottom.
+		var targetTop int
+		if cursorRows >= vh {
+			targetTop = cursorAbsRow
+		} else {
+			targetTop = cursorEndRow - vh
+		}
+		m.setAbsoluteOffset(targetTop)
 		if m.bench != nil {
 			m.bench.recordAdjust(time.Since(start))
 		}
@@ -747,6 +765,20 @@ func (m *model) adjustOffsetLocked() {
 	if m.bench != nil {
 		m.bench.recordAdjust(time.Since(start))
 	}
+}
+
+// cursorVisualHeightLocked returns the visual row count of the cursor.
+func (m *model) cursorVisualHeightLocked() int {
+	if m.cursor < 0 || m.cursor >= m.s.store.Len() {
+		return 1
+	}
+	if len(m.cursorPath) > 0 {
+		return 1
+	}
+	if m.cursor < len(m.s.visRows) {
+		return m.s.visRows[m.cursor]
+	}
+	return 1
 }
 
 // cachedVisRows returns the cached visual row count for line i, falling back

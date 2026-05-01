@@ -55,3 +55,6 @@ out*.txt
 # Log files (use testdata/ for fixtures)
 *.log
 !cmd/loggen/template.log
+.opencode
+opencode.json
+mimir-key

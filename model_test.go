@@ -41,9 +41,9 @@ func stripANSIEscapes(s string) string {
 // verifies that every │ separator in the first data row lands at the exact
 // same visible column as the corresponding one in every other row.
 func TestTabDelimitedTableAlignsEndToEnd(t *testing.T) {
-	data, err := os.ReadFile("testdata/table_align.log")
+	data, err := os.ReadFile("testdata/table_align.txt")
 	if err != nil {
-		t.Skip("testdata/table_align.log not present")
+		t.Skip("testdata/table_align.txt not present")
 	}
 	p := parser.New()
 	for _, raw := range strings.Split(strings.TrimRight(string(data), "\n"), "\n") {

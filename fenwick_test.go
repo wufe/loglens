@@ -61,6 +61,37 @@ func TestBuildFenwickFromValues(t *testing.T) {
 	}
 }
 
+// TestBuildFenwickThenAppendBeyondLen reproduces the EOF-pagination desync.
+// buildFenwick(values) with len(values)<capN must seed the parent slots that
+// cover ranges [1..p] for p>len(values) so subsequent point updates that walk
+// through those slots produce correct prefix sums. The pre-fix code only
+// rolled up i<=len(values), leaving e.g. tree[256] at zero when called with
+// 64 values; appends at indices 64..255 then incremented tree[256] by their
+// own delta only, so prefix(256) lagged the actual sum by the build-time
+// prefix that never propagated. Reproduces with len=64 → desync of 66.
+func TestBuildFenwickThenAppendBeyondLen(t *testing.T) {
+	values := make([]int, 64)
+	values[0] = 3
+	for i := 1; i < 64; i++ {
+		values[i] = 1
+	}
+	want := 3 + 63
+	f := buildFenwick(values)
+	if got := f.prefix(64); got != want {
+		t.Fatalf("post-build prefix(64) = %d, want %d", got, want)
+	}
+	// Mimic the ingestor: append more entries via point update, then check the
+	// running prefix sum after each.
+	for idx := 64; idx < 262; idx++ {
+		f.update(idx, 1)
+		want++
+		if got := f.prefix(idx + 1); got != want {
+			t.Fatalf("after update(%d, 1): prefix(%d) = %d, want %d",
+				idx, idx+1, got, want)
+		}
+	}
+}
+
 func TestFenwickUpdateDelta(t *testing.T) {
 	f := newFenwick(4)
 	f.update(1, 5)

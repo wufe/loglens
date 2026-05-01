@@ -20,13 +20,20 @@ func newFenwick(cap int) *fenwick {
 
 // buildFenwick constructs a Fenwick tree pre-populated from the given values.
 // Capacity is chosen to leave headroom for subsequent appends without an
-// immediate rebuild. Construction is O(N).
+// immediate rebuild. Construction is O(capN).
 //
 // Note: growing a Fenwick tree by mere tree-slice extension (copy into a
 // bigger slice) is *not* safe — prior point updates stop at the old n, so
 // parent slots that cover wider ranges would never have been populated. The
 // correct way to grow is to rebuild via this function from the full values
 // slice.
+//
+// The rollup loop must run over every tree index up to capN, not just
+// len(values). Slots at indices > len(values) (e.g. tree[256] when len=64
+// and capN=1024) cover ranges that include real seeded values and need
+// those rolled in; otherwise subsequent update() calls that walk through
+// those slots only contribute their own deltas, leaving the prefix sum
+// permanently short by the build-time prefix that never propagated.
 func buildFenwick(values []int) *fenwick {
 	capN := max(len(values)*2, 1024)
 	f := &fenwick{n: capN, tree: make([]int, capN+1)}
@@ -35,7 +42,7 @@ func buildFenwick(values []int) *fenwick {
 		f.tree[i+1] = v
 	}
 	// Linear-time Fenwick construction: each node rolls up into its parent.
-	for i := 1; i <= len(values); i++ {
+	for i := 1; i <= capN; i++ {
 		parent := i + (i & -i)
 		if parent <= capN {
 			f.tree[parent] += f.tree[i]
