@@ -3,7 +3,7 @@ package stats
 import (
 	"encoding/json"
 	"fmt"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"regexp"
 	"sort"
 	"strconv"

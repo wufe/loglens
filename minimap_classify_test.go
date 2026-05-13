@@ -1,7 +1,7 @@
 package main
 
 import (
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"testing"
 )
 

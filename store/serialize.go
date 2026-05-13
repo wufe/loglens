@@ -5,7 +5,7 @@ import (
 	"compress/flate"
 	"encoding/gob"
 	"io"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 )
 
 func init() {

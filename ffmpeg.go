@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"strconv"
 	"strings"
 	"time"

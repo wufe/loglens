@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"regexp"
 	"strings"
 )

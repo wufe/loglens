@@ -3,7 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/json"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"strings"
 )
 

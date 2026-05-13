@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"strings"
 
 	"github.com/acarl005/stripansi"

@@ -1,7 +1,7 @@
 package render
 
 import (
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 )
 
 func renderDiff(l *line.LogLine, styles *Styles) string {

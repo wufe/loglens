@@ -1,7 +1,7 @@
 package render
 
 import (
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"strings"
 	"testing"
 

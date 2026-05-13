@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"loglens/input"
-	"loglens/line"
-	"loglens/parser"
-	"loglens/render"
-	"loglens/store"
+	"github.com/wufe/loglens/input"
+	"github.com/wufe/loglens/line"
+	"github.com/wufe/loglens/parser"
+	"github.com/wufe/loglens/render"
+	"github.com/wufe/loglens/store"
 	"os"
 	"strings"
 	"testing"

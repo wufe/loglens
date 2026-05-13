@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"os"
 	"path/filepath"
 	"strings"

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"loglens/input"
-	"loglens/line"
+	"github.com/wufe/loglens/input"
+	"github.com/wufe/loglens/line"
 	"os"
 	"strings"
 	"testing"

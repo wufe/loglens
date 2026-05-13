@@ -47,7 +47,6 @@ loglens -- some-command arg1 arg2
 -x, --exit-on-eof  Auto-exit 5s after EOF when in follow mode
 --max-disk <size>  Max disk for offloaded chunks (e.g. 512M, 2G; default: 1G)
 --bench <file>     Write timing metrics to <file> for perf testing
---no-color         Disable styling (plain passthrough)
 -h, --help         Show help
 ```
 

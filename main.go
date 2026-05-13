@@ -2,15 +2,20 @@ package main
 
 import (
 	"fmt"
-	"loglens/input"
+	"github.com/wufe/loglens/input"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+// version is the build version. Overridable via -ldflags "-X main.version=...".
+// When unset, falls back to module info from runtime/debug.
+var version = ""
 
 type invocationMode int
 
@@ -22,8 +27,14 @@ const (
 func main() {
 	// Parse CLI flags
 	args := os.Args[1:]
+	if len(args) > 0 {
+		switch args[0] {
+		case "version", "--version", "-v":
+			fmt.Println(versionString())
+			os.Exit(0)
+		}
+	}
 	noFollow := false
-	noColor := false
 	exitOnEOF := false
 	benchPath := ""
 	var maxDiskCap int64
@@ -34,8 +45,6 @@ func main() {
 		case "-h", "--help":
 			printUsage()
 			os.Exit(0)
-		case "--no-color":
-			noColor = true
 		case "--no-follow":
 			noFollow = true
 		case "-x", "--exit-on-eof":
@@ -68,8 +77,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
-	_ = noColor // TODO: implement no-color mode
 
 	var bench *benchLogger
 	if benchPath != "" {
@@ -165,13 +172,54 @@ func printUsage() {
   <command> 2>&1 | loglens         Pipe output into loglens
   loglens < file.log               View a log file
 
+Commands:
+  version            Print version information and exit
+
 Options:
-  --no-color         Disable styling (plain passthrough)
   --no-follow        Start with follow mode off (default: on)
   -x, --exit-on-eof  Auto-exit 5s after EOF when in follow mode
   --max-disk <size>  Max disk for offloaded chunks (e.g. 512M, 2G; default: 1G)
   --bench <file>     Write timing metrics to <file> for perf testing
   -h, --help         Show this help`)
+}
+
+// versionString returns a human-readable build identifier. If `version` was
+// set via -ldflags it wins; otherwise we read module + VCS info from the
+// embedded build metadata (works for `go install ...@vX.Y.Z` builds).
+func versionString() string {
+	if version != "" {
+		return "loglens " + version
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "loglens (unknown)"
+	}
+	v := info.Main.Version
+	if v == "" {
+		v = "(devel)"
+	}
+	// Strip any "+dirty" Go appends to Main.Version — we surface dirty state
+	// via the VCS suffix instead, to avoid duplication.
+	v = strings.TrimSuffix(v, "+dirty")
+	var rev, modified string
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			if len(s.Value) >= 12 {
+				rev = s.Value[:12]
+			} else {
+				rev = s.Value
+			}
+		case "vcs.modified":
+			if s.Value == "true" {
+				modified = "-dirty"
+			}
+		}
+	}
+	if rev != "" {
+		return fmt.Sprintf("loglens %s (%s%s)", v, rev, modified)
+	}
+	return "loglens " + v
 }
 
 // parseDiskSize parses a human-readable size like "512M", "2G", "1024" (bytes).

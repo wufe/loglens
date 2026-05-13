@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 )
 
 // BenchmarkRenderS3JSONCollapsed exercises the hot-path collapsed render

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"loglens/line"
-	"loglens/stats"
+	"github.com/wufe/loglens/line"
+	"github.com/wufe/loglens/stats"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"

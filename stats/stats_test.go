@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"sync"
 	"testing"
 	"time"

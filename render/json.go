@@ -3,7 +3,7 @@ package render
 import (
 	"encoding/json"
 	"fmt"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"

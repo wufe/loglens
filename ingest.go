@@ -1,11 +1,11 @@
 package main
 
 import (
-	"loglens/input"
-	"loglens/line"
-	"loglens/parser"
-	"loglens/stats"
-	"loglens/store"
+	"github.com/wufe/loglens/input"
+	"github.com/wufe/loglens/line"
+	"github.com/wufe/loglens/parser"
+	"github.com/wufe/loglens/stats"
+	"github.com/wufe/loglens/store"
 	"sync"
 	"sync/atomic"
 )

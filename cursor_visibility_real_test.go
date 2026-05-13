@@ -1,7 +1,7 @@
 package main
 
 import (
-	"loglens/input"
+	"github.com/wufe/loglens/input"
 	"os"
 	"strings"
 	"testing"
@@ -65,7 +65,11 @@ func TestRealIngestEOFViewport(t *testing.T) {
 	for time.Now().Before(deadline) {
 		mod, _ = mod.Update(tickMsg(time.Now()))
 		mm := mod.(model)
-		curLen := mm.store.Len()
+		// Production reads store length under s.mu; the ingestor is still
+		// running here, so a bare mm.store.Len() races with Append.
+		mm.s.mu.RLock()
+		curLen := mm.s.store.Len()
+		mm.s.mu.RUnlock()
 		if curLen == prevLen && mm.eof {
 			stable++
 			if stable > 3 {

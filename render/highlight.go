@@ -2,7 +2,7 @@ package render
 
 import (
 	"fmt"
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 	"os"
 	"strings"
 	"sync"

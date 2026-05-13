@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"loglens/line"
+	"github.com/wufe/loglens/line"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
