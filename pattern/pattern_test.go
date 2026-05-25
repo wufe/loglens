@@ -347,6 +347,49 @@ func TestMergePreservesCommonJSONStructure(t *testing.T) {
 	}
 }
 
+// TestPostgresStyleTimestampsCollapse covers a real-world failure mode the
+// user hit: pipe-delimited DB output rows where the timestamp column uses
+// the "YYYY-MM-DD HH:MM:SS.ffffff+TZ" PostgreSQL format (space separator,
+// 2-digit timezone). Without the timestamp mask covering this shape, each
+// distinct day stayed as its own literal token ("-05-25", "-05-23", etc.)
+// and otherwise-identical rows split into one cluster per date.
+//
+// After the mask handles the full timestamp, the date-bearing tokens
+// collapse and adaptive merge can fold all rows of this shape into a
+// small number of clusters.
+func TestPostgresStyleTimestampsCollapse(t *testing.T) {
+	ClearCache()
+	row := func(rowID, day, hms, frac, smallA string) string {
+		return rowID + `|87873725-1321-4958-8ca9-84fa8e343690|2026-` + day + ` ` + hms + `.` + frac + `+00|42412203|eu-west-1|5|2026|bucket|` + smallA + `|25|NULL`
+	}
+	lines := []string{
+		row("f6466b14-6c1d-4b18-95ca-9374c02f1875", "05-25", "13:31:40", "861478", "0"),
+		row("00a50c9f-4bf7-4002-9852-2404bf6360ee", "05-23", "20:31:48", "426104", "7"),
+		row("6b5a4b46-0938-4f54-bb6c-69aa9f5ca720", "05-20", "23:31:00", "123900", "10"),
+		row("3ee25a2f-1995-466e-9e36-0cebe732383c", "05-06", "11:32:24", "728974", "22"),
+		row("85e14db9-9a19-48d0-a633-b82f67db0a69", "04-21", "13:31:30", "437630", "0"),
+	}
+	pats := ExtractPatterns(lines)
+	// 5 nearly-identical rows differing only in dates, UUIDs, and a small
+	// integer; adaptive merge target = sqrt(5) ≈ 3. Crucially we must NOT
+	// see one cluster per date — that's the bug.
+	if len(pats) > 3 {
+		t.Fatalf("expected ≤3 clusters once timestamps mask correctly; got %d:\n%s",
+			len(pats), dumpPatterns(pats))
+	}
+	// And no surviving template should still contain a date fragment like
+	// "-05-" or "-04-" — that would mean the date mask isn't catching the
+	// month/day chunks.
+	for _, p := range pats {
+		for _, frag := range []string{"-05-25", "-05-23", "-05-20", "-05-06", "-04-21"} {
+			if strings.Contains(p.Template, frag) {
+				t.Errorf("template still contains date fragment %q (should be masked):\ntemplate: %s",
+					frag, p.Template)
+			}
+		}
+	}
+}
+
 // TestCacheClearable confirms ClearCache actually empties the memoization
 // state. Hard to assert directly without exposing internals, so we check
 // indirectly via behavior: after clearing, calling ExtractPatterns still

@@ -38,8 +38,11 @@ import (
 
 // splitTokens chops a string into tokens using three rules:
 //
-//   - whitespace, comma, and semicolon are discarded separators (so JSON
-//     fields and semicolon-separated lists become one token each);
+//   - whitespace, comma, semicolon, and pipe (ASCII "|" and the box-drawing
+//     forms "│" U+2502, "┃" U+2503, "║" U+2551) are discarded separators.
+//     This covers JSON commas, SignedHeaders semicolons, and tabular output
+//     where columns are separated by pipes (psql, mysql -t, custom report
+//     formats).
 //   - braces and brackets ({, }, [, ]) are emitted as their own single-
 //     character tokens (preserved, not discarded) so two structurally
 //     similar lines whose bracketed contents are reordered still share
@@ -61,7 +64,8 @@ func splitTokens(s string) []string {
 	}
 	for _, r := range s {
 		switch {
-		case unicode.IsSpace(r), r == ',', r == ';':
+		case unicode.IsSpace(r), r == ',', r == ';',
+			r == '|', r == '│', r == '┃', r == '║':
 			flush()
 		case r == '{', r == '}', r == '[', r == ']':
 			flush()
@@ -558,8 +562,16 @@ func (r maskRule) apply(s string) string {
 // so place specific patterns before generic ones — e.g. ISO timestamps
 // before time-of-day, UUIDs before plain hex, IPs before decimal numbers.
 var maskRules = []maskRule{
-	// ISO 8601 timestamp with optional fractional seconds and tz.
-	{re: regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?`), with: "*"},
+	// Timestamp: YYYY-MM-DD followed by either "T" or " " then HH:MM:SS,
+	// optional fractional seconds, optional timezone in any of "Z" /
+	// "+HH" / "+HHMM" / "+HH:MM" forms. Covers ISO 8601, RFC 3339, and
+	// PostgreSQL-style ("2026-05-25 13:31:40.861478+00") in one rule.
+	{re: regexp.MustCompile(`\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}(?::?\d{2})?)?`), with: "*"},
+	// Bare date YYYY-MM-DD with no time attached. Catches dates that appear
+	// alone in log fields (date columns, log-level prefixes like W0525, etc.)
+	// after the full-timestamp rule above has already consumed any
+	// date+time combinations.
+	{re: regexp.MustCompile(`\b\d{4}-\d{2}-\d{2}\b`), with: "*"},
 	// nginx access-log style date: 25/May/2026:07:59:59
 	{re: regexp.MustCompile(`\d{1,2}/[A-Z][a-z]{2}/\d{4}(?::\d{2}:\d{2}:\d{2})?`), with: "*"},
 	// Slash-date 2026/05/25
