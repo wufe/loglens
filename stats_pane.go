@@ -37,10 +37,16 @@ func (m model) updateStatsMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	switch {
 	case msg.String() == "tab" || msg.String() == "esc":
+		// Stats releases focus → if patterns is open, jump there next so
+		// Tab cycles through every visible pane before returning to logs.
+		// Esc collapses focus all the way back to logs regardless.
 		m.statsFocused = false
 		if m.statsLayout == statsLayoutFullStats {
 			m.statsLayout = statsLayoutSplit
 			m.adjustOffsetLocked()
+		}
+		if msg.String() == "tab" && m.patternsVisible {
+			m.patternsFocused = true
 		}
 	case isKeyZoom(msg):
 		if m.statsLayout == statsLayoutFullStats {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wufe/loglens/input"
 	"github.com/wufe/loglens/line"
+	"github.com/wufe/loglens/pattern"
 	"github.com/wufe/loglens/render"
 	"github.com/wufe/loglens/stats"
 	"github.com/wufe/loglens/store"
@@ -88,6 +89,15 @@ type model struct {
 	statsFocused    bool // true when key events drive the stats pane (tab toggles)
 	statsBoxOffset  int  // leftmost stat box currently visible in the row
 	statsBoxFocused int  // index of the focused stat box (within statsMgr.All())
+
+	// Pattern panel: toggled with "p". Recomputes from the visible-line
+	// window every render (cheap — see pattern package). When focused, the
+	// cursor selects one pattern and the log viewport highlights the lines
+	// that mask to its skeleton.
+	patternsVisible  bool
+	patternsFocused  bool
+	patternCursor    int // index into the pattern list as rendered this tick
+	patternBoxOffset int // top-row scroll offset within the pattern list
 }
 
 // statsLayoutMode controls how vertical space is split between the log
@@ -328,6 +338,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.statsFocused {
 			return m.updateStatsMode(msg)
 		}
+		if m.patternsFocused {
+			return m.updatePatternsMode(msg)
+		}
 		return m.updateNormalMode(msg)
 	}
 
@@ -450,13 +463,17 @@ func (m model) updateNormalMode(msg tea.KeyMsg) (retModel tea.Model, retCmd tea.
 		}
 
 	case isKeyTab(msg):
-		// Switch focus between log viewport and stats pane. No-op when no
-		// stats exist (the pane isn't rendered).
-		if m.statsMgr != nil && len(m.statsMgr.All()) > 0 {
+		// Cycle focus forward: logs → stats (if any) → patterns (if visible) → logs.
+		// Skip panes that aren't actually rendered so the user never lands on
+		// an empty focus state.
+		switch {
+		case m.statsMgr != nil && len(m.statsMgr.All()) > 0:
 			m.statsFocused = true
 			if m.statsLayout == statsLayoutFullLogs {
 				m.statsLayout = statsLayoutSplit
 			}
+		case m.patternsVisible:
+			m.patternsFocused = true
 		}
 
 	case isKeyZoom(msg):
@@ -633,6 +650,17 @@ func (m model) updateNormalMode(msg tea.KeyMsg) (retModel tea.Model, retCmd tea.
 
 	case msg.String() == "m":
 		m.showMinimap = !m.showMinimap
+
+	case msg.String() == "p":
+		// Toggle the patterns pane. Recompute clamps the cursor when the
+		// pane reopens onto a different visible-line window.
+		m.patternsVisible = !m.patternsVisible
+		if !m.patternsVisible {
+			m.patternsFocused = false
+			m.patternCursor = 0
+			m.patternBoxOffset = 0
+		}
+		m.adjustOffsetLocked()
 
 	case msg.String() == "w":
 		m.wrapMode = !m.wrapMode
@@ -946,6 +974,8 @@ func (m model) viewportHeight() int {
 	// returns 0 when no stats exist or layout hides the pane, so this is a
 	// no-op in the default single-pane case.
 	h -= m.statsAreaHeight()
+	// Patterns pane stacks below stats when toggled on; same accounting.
+	h -= m.patternsAreaHeight()
 	// Stats-only layout drives the logs region to 0; the View skips log
 	// rendering entirely in that mode rather than reserving a phantom row.
 	if m.statsLayout == statsLayoutFullStats &&
@@ -1053,6 +1083,30 @@ func (m model) View() string {
 		rows = m.overlayMinimapRows(rows, rowLineIdx, vh)
 	}
 
+	// Pattern computation runs over the visible-line window we just
+	// rendered. The result is shared between the row-highlight pass below
+	// and the pane render — avoids walking masking twice per tick.
+	var pats []pattern.Pattern
+	var patStoreIdx []int
+	var matched map[int]bool
+	if m.patternsVisible {
+		pats, patStoreIdx = m.visiblePatterns()
+		if m.patternsFocused {
+			matched = m.matchedLineIndices(pats, patStoreIdx)
+		}
+	}
+	if len(matched) > 0 {
+		// Width (not MaxWidth) so the background extends across the full
+		// terminal width — otherwise only the visible characters get the
+		// highlight color and short log lines look almost unchanged.
+		hl := m.styles.PatternMatch.Width(m.width)
+		for i := range rows {
+			if matched[rowLineIdx[i]] {
+				rows[i] = hl.Render(rows[i])
+			}
+		}
+	}
+
 	for _, row := range rows {
 		sb.WriteString(row)
 		sb.WriteByte('\n')
@@ -1063,6 +1117,15 @@ func (m model) View() string {
 	if pane := m.renderStatsPane(); pane != "" {
 		sb.WriteString(pane)
 		sb.WriteByte('\n')
+	}
+
+	// Patterns container — same wire-up as stats. Built from the pats
+	// slice we already computed above so the masking happens once.
+	if m.patternsVisible {
+		if pane := m.renderPatternsPane(pats); pane != "" {
+			sb.WriteString(pane)
+			sb.WriteByte('\n')
+		}
 	}
 
 	// Search bar
@@ -1227,6 +1290,9 @@ func (m model) renderStatusBar() string {
 	if m.showMinimap {
 		centerParts = append(centerParts, m.styles.StatusFollow.Render(" MAP "))
 	}
+	if m.patternsVisible {
+		centerParts = append(centerParts, m.styles.StatusFollow.Render(" PAT "))
+	}
 	if diskUsed := m.store.DiskUsed(); diskUsed > 0 {
 		centerParts = append(centerParts, m.styles.StatusEOF.Render(fmt.Sprintf(" DISK:%s ", formatBytes(diskUsed))))
 	}
@@ -1258,7 +1324,7 @@ func (m model) renderStatusBar() string {
 	center := strings.Join(centerParts, "")
 
 	// Right: help
-	right := m.styles.StatusBarKey.Render(" q:quit │ /:search │ arrows:navigate ")
+	right := m.styles.StatusBarKey.Render(" q:quit │ /:search │ p:patterns │ arrows:navigate ")
 
 	// Pad center
 	leftW := lipgloss.Width(left)

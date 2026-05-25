@@ -80,6 +80,12 @@ type Styles struct {
 	SearchMatch lipgloss.Style
 	SearchBar   lipgloss.Style
 
+	// PatternMatch applies to log rows whose skeleton matches the pattern
+	// the user has selected in the patterns panel. Distinct from CursorLine
+	// (a darker, more subdued gray) so a matched non-cursor line and the
+	// cursor remain visually separable.
+	PatternMatch lipgloss.Style
+
 	// Plain
 	Plain lipgloss.Style
 }
@@ -146,6 +152,8 @@ func DefaultStyles() *Styles {
 
 		SearchMatch: lipgloss.NewStyle().Background(lipgloss.Color("220")).Foreground(lipgloss.Color("0")),
 		SearchBar:   lipgloss.NewStyle().Background(lipgloss.Color("237")).Foreground(lipgloss.Color("255")),
+
+		PatternMatch: lipgloss.NewStyle().Background(lipgloss.Color("53")),
 
 		Plain: lipgloss.NewStyle(),
 	}
