@@ -295,6 +295,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.statsMgr.Stop()
 					}
 					m.s.store.Close()
+					pattern.ClearCache()
 					return m, tea.Quit
 				}
 			} else {
@@ -398,6 +399,7 @@ func (m model) updateNormalMode(msg tea.KeyMsg) (retModel tea.Model, retCmd tea.
 			m.statsMgr.Stop()
 		}
 		m.s.store.Close()
+		pattern.ClearCache()
 		return m, tea.Quit
 	}
 

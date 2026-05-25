@@ -58,6 +58,7 @@ func (m model) updatePatternsMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statsMgr.Stop()
 		}
 		m.s.store.Close()
+		pattern.ClearCache()
 		return m, tea.Quit
 	}
 

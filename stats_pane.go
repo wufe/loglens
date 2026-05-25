@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/wufe/loglens/line"
+	"github.com/wufe/loglens/pattern"
 	"github.com/wufe/loglens/stats"
 	"strings"
 
@@ -27,6 +28,7 @@ func (m model) updateStatsMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statsMgr.Stop()
 		}
 		m.s.store.Close()
+		pattern.ClearCache()
 		return m, tea.Quit
 	}
 	all := m.statsMgr.All()
