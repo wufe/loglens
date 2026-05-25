@@ -32,7 +32,46 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode"
 )
+
+// splitTokens chops a string into tokens using three rules:
+//
+//   - whitespace, comma, and semicolon are discarded separators (so JSON
+//     fields and semicolon-separated lists become one token each);
+//   - braces and brackets ({, }, [, ]) are emitted as their own single-
+//     character tokens (preserved, not discarded) so two structurally
+//     similar lines whose bracketed contents are reordered still share
+//     the bracket tokens in their multisets;
+//   - everything else accumulates into the current token.
+//
+// Fully generic — no JSON-specific parsing or field-name awareness — but
+// dense enough to give the clustering algorithm something to align on
+// even when log lines pack a lot of structure into very few whitespace
+// boundaries.
+func splitTokens(s string) []string {
+	tokens := make([]string, 0, 16)
+	var current strings.Builder
+	flush := func() {
+		if current.Len() > 0 {
+			tokens = append(tokens, current.String())
+			current.Reset()
+		}
+	}
+	for _, r := range s {
+		switch {
+		case unicode.IsSpace(r), r == ',', r == ';':
+			flush()
+		case r == '{', r == '}', r == '[', r == ']':
+			flush()
+			tokens = append(tokens, string(r))
+		default:
+			current.WriteRune(r)
+		}
+	}
+	flush()
+	return tokens
+}
 
 // maxCacheEntries bounds the per-generation cache size. With a generational
 // rotation scheme (active + previous), the worst-case memory ceiling is
@@ -162,7 +201,7 @@ func ExtractPatterns(lines []string) []Pattern {
 // only a map lookup.
 func skeletonKey(line string) string {
 	return cachedSkeleton(line, func() string {
-		tokens := strings.Fields(line)
+		tokens := splitTokens(line)
 		for i, t := range tokens {
 			tokens[i] = maskToken(t)
 		}
@@ -294,42 +333,54 @@ func mergeClusters(a, b Pattern) Pattern {
 	return merged
 }
 
-// mergeSkeletons returns a skeleton that keeps tokens where a and b agree
-// and replaces tokens where they disagree (or beyond the shorter one's end)
-// with "*". For equal-length skeletons this is just position-wise diff.
-// For different-length skeletons, the common prefix is kept, the common
-// suffix is kept, and the disagreeing middle becomes a single "*". That
-// keeps the merged template readable even when JSON ordering produced two
-// skeletons of slightly different token counts.
+// mergeSkeletons returns a skeleton built from the longest common
+// subsequence (LCS) of the two inputs' tokens. Tokens present in both —
+// in their natural order — are kept verbatim; gaps where one or both
+// sides have non-matching tokens collapse to a single "*".
+//
+// LCS-based merging preserves common structure even when individual
+// positions don't line up (e.g. JSON objects whose keys appear in a
+// different order across log lines). This matters because repeated
+// merging compounds: a position-XOR approach erodes one bit of structure
+// per merge until only first/last tokens survive, while LCS only loses
+// tokens that genuinely differ across all merged inputs.
 func mergeSkeletons(a, b string) string {
-	ta := strings.Fields(a)
-	tb := strings.Fields(b)
-	if len(ta) == len(tb) {
-		out := make([]string, len(ta))
-		for i := range ta {
-			if ta[i] == tb[i] {
-				out[i] = ta[i]
-			} else {
-				out[i] = "*"
-			}
+	ta := splitTokens(a)
+	tb := splitTokens(b)
+	if len(ta) == 0 && len(tb) == 0 {
+		return ""
+	}
+	common := lcs(ta, tb)
+	out := make([]string, 0, len(common)*2+1)
+	ia, ib, ic := 0, 0, 0
+	appendStar := func() {
+		if len(out) == 0 || out[len(out)-1] != "*" {
+			out = append(out, "*")
 		}
-		return strings.Join(out, " ")
 	}
-	// Different lengths: keep matching prefix and suffix, collapse the
-	// middle to one "*".
-	prefix := 0
-	for prefix < len(ta) && prefix < len(tb) && ta[prefix] == tb[prefix] {
-		prefix++
+	for ic < len(common) {
+		// Skip over divergent tokens in each input until we land on the
+		// next common token. A non-zero skip means the gap holds at least
+		// one differing token, which gets represented by a single "*".
+		startA, startB := ia, ib
+		for ia < len(ta) && ta[ia] != common[ic] {
+			ia++
+		}
+		for ib < len(tb) && tb[ib] != common[ic] {
+			ib++
+		}
+		if ia > startA || ib > startB {
+			appendStar()
+		}
+		out = append(out, common[ic])
+		ia++
+		ib++
+		ic++
 	}
-	suffix := 0
-	for suffix < len(ta)-prefix && suffix < len(tb)-prefix &&
-		ta[len(ta)-1-suffix] == tb[len(tb)-1-suffix] {
-		suffix++
+	// Trailing divergent tokens (anything past the last LCS match).
+	if ia < len(ta) || ib < len(tb) {
+		appendStar()
 	}
-	out := make([]string, 0, prefix+1+suffix)
-	out = append(out, ta[:prefix]...)
-	out = append(out, "*")
-	out = append(out, ta[len(ta)-suffix:]...)
 	return strings.Join(out, " ")
 }
 
@@ -350,6 +401,50 @@ func collapseStars(key string) string {
 		prevStar = isStar
 	}
 	return strings.Join(out, " ")
+}
+
+// lcs returns the longest common subsequence of two token slices using a
+// standard dynamic-programming table. O(m·n) time and memory; with token
+// lists capped around 100 entries per cluster this stays under a few
+// hundred KB and well under a millisecond.
+func lcs(a, b []string) []string {
+	m, n := len(a), len(b)
+	if m == 0 || n == 0 {
+		return nil
+	}
+	dp := make([][]int, m+1)
+	for i := range dp {
+		dp[i] = make([]int, n+1)
+	}
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			if a[i-1] == b[j-1] {
+				dp[i][j] = dp[i-1][j-1] + 1
+			} else if dp[i-1][j] >= dp[i][j-1] {
+				dp[i][j] = dp[i-1][j]
+			} else {
+				dp[i][j] = dp[i][j-1]
+			}
+		}
+	}
+	out := make([]string, 0, dp[m][n])
+	i, j := m, n
+	for i > 0 && j > 0 {
+		if a[i-1] == b[j-1] {
+			out = append(out, a[i-1])
+			i--
+			j--
+		} else if dp[i-1][j] >= dp[i][j-1] {
+			i--
+		} else {
+			j--
+		}
+	}
+	// Reverse — backtrack produced the subsequence in reverse order.
+	for l, r := 0, len(out)-1; l < r; l, r = l+1, r-1 {
+		out[l], out[r] = out[r], out[l]
+	}
+	return out
 }
 
 // maskRule is one substitution pass over a token. Either with is set (plain

@@ -300,6 +300,53 @@ func TestAdaptiveMergeRespectsFloor(t *testing.T) {
 	}
 }
 
+// TestMergePreservesCommonJSONStructure covers the failure mode the user
+// hit in real logs: many warn-level JSON lines that share most of their
+// structure but reorder their http.headers object and rotate a single
+// quoted tenant-name value would previously merge into a useless template
+// like "[pod/...] * 200" because position-XOR collapse eroded everything
+// between the first and last matching token.
+//
+// After finer tokenization (split on whitespace + commas + semicolons) and
+// LCS-based merging, the merged template should still contain the parts
+// that are common across every input — the literal "level", "service",
+// "request_method", "status" markers — not just the first and last tokens.
+func TestMergePreservesCommonJSONStructure(t *testing.T) {
+	ClearCache()
+	lines := []string{
+		`[pod/svc-aa] {"level":"warn","service":"gw","method":"GET","url":"/a","headers":{"X-A":"1","X-B":"2","X-C":"3"},"tenant":"alpha","status":200}`,
+		`[pod/svc-aa] {"level":"warn","service":"gw","method":"GET","url":"/b","headers":{"X-B":"2","X-A":"1","X-C":"3"},"tenant":"beta","status":200}`,
+		`[pod/svc-aa] {"level":"warn","service":"gw","method":"GET","url":"/c","headers":{"X-C":"3","X-A":"1","X-B":"2"},"tenant":"gamma","status":200}`,
+		`[pod/svc-aa] {"level":"warn","service":"gw","method":"GET","url":"/d","headers":{"X-A":"1","X-C":"3","X-B":"2"},"tenant":"delta","status":200}`,
+		`[pod/svc-aa] {"level":"warn","service":"gw","method":"GET","url":"/e","headers":{"X-B":"2","X-C":"3","X-A":"1"},"tenant":"epsilon","status":200}`,
+	}
+	pats := ExtractPatterns(lines)
+	// 5 inputs → target sqrt(5)=3. With the inputs only differing in header
+	// order and tenant value, the algorithm should land at-or-below the
+	// target. The important assertion is what the *templates* look like:
+	// every cluster's template must still expose the literal structure
+	// (level/service/method/status) so the user can recognize the shape
+	// across reorderings.
+	if len(pats) > 3 {
+		t.Fatalf("expected ≤3 clusters (target sqrt(5)=3); got %d:\n%s",
+			len(pats), dumpPatterns(pats))
+	}
+	wantLiterals := []string{
+		`"level":"warn"`,
+		`"service":"gw"`,
+		`"method":"GET"`,
+		`"status":200`,
+	}
+	for ci, p := range pats {
+		for _, want := range wantLiterals {
+			if !strings.Contains(p.Template, want) {
+				t.Errorf("cluster %d lost the common literal %q after merge\ntemplate: %s",
+					ci, want, p.Template)
+			}
+		}
+	}
+}
+
 // TestCacheClearable confirms ClearCache actually empties the memoization
 // state. Hard to assert directly without exposing internals, so we check
 // indirectly via behavior: after clearing, calling ExtractPatterns still
