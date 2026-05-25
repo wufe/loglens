@@ -27,6 +27,7 @@
 package pattern
 
 import (
+	"hash/fnv"
 	"math"
 	"regexp"
 	"sort"
@@ -96,15 +97,90 @@ var (
 	previousCache map[string]string
 )
 
-// ClearCache drops every memoized skeleton. Safe to call concurrently.
-// Useful when the caller knows it's done with pattern extraction (program
-// exit, large workload change, tests) so the cache doesn't retain raw log
-// content past its useful life.
+// ClearCache drops every memoized skeleton and every memoized extraction
+// result. Safe to call concurrently. Useful when the caller knows it's done
+// with pattern extraction (program exit, large workload change, tests) so
+// the caches don't retain raw log content past their useful life.
 func ClearCache() {
 	cacheMu.Lock()
 	activeCache = make(map[string]string, maxCacheEntries)
 	previousCache = nil
 	cacheMu.Unlock()
+	resultCacheMu.Lock()
+	activeResultCache = make(map[uint64][]Pattern, maxResultCacheEntries)
+	previousResultCache = nil
+	resultCacheMu.Unlock()
+}
+
+// maxResultCacheEntries bounds the result-level cache. Each entry holds a
+// slice of Patterns whose total footprint depends on the input, but a few
+// hundred entries is plenty for typical viewport use (cursor navigation in
+// the patterns panel only ever asks for the same input repeatedly).
+const maxResultCacheEntries = 256
+
+// activeResultCache memoizes the full ExtractPatterns output keyed by a
+// hash of its input slice. The adaptive-merge phase (LCS over pairs of
+// clusters) is the most expensive step and is identical for identical
+// inputs, so caching it makes panel navigation effectively free as long
+// as the user isn't scrolling the underlying log viewport.
+var (
+	resultCacheMu       sync.Mutex
+	activeResultCache   = make(map[uint64][]Pattern, maxResultCacheEntries)
+	previousResultCache map[uint64][]Pattern
+)
+
+// hashInput produces a 64-bit fingerprint of the input slice. Two slices
+// with the same lines in the same order yield the same hash; differing
+// inputs are extremely unlikely to collide. We embed the line count and a
+// per-line length so adding/removing a line at the end can't accidentally
+// match a prefix.
+func hashInput(lines []string) uint64 {
+	h := fnv.New64a()
+	var lenBuf [8]byte
+	count := uint64(len(lines))
+	for i := 0; i < 8; i++ {
+		lenBuf[i] = byte(count >> (8 * i))
+	}
+	h.Write(lenBuf[:])
+	for _, ln := range lines {
+		l := uint64(len(ln))
+		for i := 0; i < 8; i++ {
+			lenBuf[i] = byte(l >> (8 * i))
+		}
+		h.Write(lenBuf[:])
+		h.Write([]byte(ln))
+	}
+	return h.Sum64()
+}
+
+// cachedResult returns the cached result for hash if present, otherwise
+// computes it via compute and stores it under hash. Handles generational
+// rotation under the mutex, same shape as cachedSkeleton.
+func cachedResult(hash uint64, compute func() []Pattern) []Pattern {
+	resultCacheMu.Lock()
+	if v, ok := activeResultCache[hash]; ok {
+		resultCacheMu.Unlock()
+		return v
+	}
+	if previousResultCache != nil {
+		if v, ok := previousResultCache[hash]; ok {
+			activeResultCache[hash] = v
+			resultCacheMu.Unlock()
+			return v
+		}
+	}
+	resultCacheMu.Unlock()
+
+	v := compute()
+
+	resultCacheMu.Lock()
+	if len(activeResultCache) >= maxResultCacheEntries {
+		previousResultCache = activeResultCache
+		activeResultCache = make(map[uint64][]Pattern, maxResultCacheEntries)
+	}
+	activeResultCache[hash] = v
+	resultCacheMu.Unlock()
+	return v
 }
 
 // cachedSkeleton returns the cached skeleton string for raw, computing it
@@ -154,11 +230,24 @@ type Pattern struct {
 // then runs an adaptive merge pass to keep cluster cardinality proportional
 // to input variety. Returns clusters sorted by member count desc, breaking
 // ties by the index of the first member.
+//
+// Memoized end-to-end: identical input slices (as judged by an FNV-1a hash
+// of the lines) return the cached slice instantly. Pattern panel navigation
+// re-asks for the same input on every j/k press, so without this cache the
+// adaptive-merge phase would re-run on every cursor move.
 func ExtractPatterns(lines []string) []Pattern {
 	if len(lines) == 0 {
 		return nil
 	}
+	return cachedResult(hashInput(lines), func() []Pattern {
+		return extractPatternsUncached(lines)
+	})
+}
 
+// extractPatternsUncached is the actual masking + clustering + merging
+// pipeline. Public callers go through ExtractPatterns to benefit from the
+// result cache; this exists separately so the cache wrapper stays tiny.
+func extractPatternsUncached(lines []string) []Pattern {
 	// Phase 1: mask + initial cluster.
 	groups := make(map[string]*Pattern, len(lines))
 	order := make([]string, 0, len(lines))

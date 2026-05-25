@@ -661,6 +661,12 @@ func (m model) updateNormalMode(msg tea.KeyMsg) (retModel tea.Model, retCmd tea.
 			m.patternsFocused = false
 			m.patternCursor = 0
 			m.patternBoxOffset = 0
+			m.s.patternsPaneHeight.Store(0)
+		} else {
+			// Reset to 0 so patternsAreaHeight falls back to "use max"
+			// for the first render — pane reservation is correct from
+			// frame 1 instead of flashing tiny then growing.
+			m.s.patternsPaneHeight.Store(0)
 		}
 		m.adjustOffsetLocked()
 
@@ -1096,6 +1102,19 @@ func (m model) View() string {
 		if m.patternsFocused {
 			matched = m.matchedLineIndices(pats, patStoreIdx)
 		}
+		// Stash the actual desired pane height for next frame's
+		// patternsAreaHeight call. desired = header(1) + one row per
+		// pattern, clamped to [2, max].
+		desired := 1 + len(pats)
+		if desired < 2 {
+			desired = 2
+		}
+		if max := m.patternsMaxAreaHeight(); max > 0 && desired > max {
+			desired = max
+		}
+		m.s.patternsPaneHeight.Store(int32(desired))
+	} else {
+		m.s.patternsPaneHeight.Store(0)
 	}
 	if len(matched) > 0 {
 		// Width (not MaxWidth) so the background extends across the full

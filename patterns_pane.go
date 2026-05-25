@@ -13,16 +13,52 @@ import (
 // patternsAreaHeight returns the rows allotted to the patterns container at
 // the current window/layout, or 0 when it should be hidden.
 //
-// Sized the same as the stats area (avail/3 with a 4-row floor) so when both
-// panes are open the layout reads as three thirds — logs on top, then stats,
-// then patterns. When only the patterns pane is open it gets one-third and
-// logs keep two-thirds, mirroring the stats-only behavior.
+// Sizing rule: header row + one row per current pattern, capped at
+// patternsMaxAreaHeight() = m.height/4. The exact row count is recomputed by
+// View at the end of each render and stashed in sharedState; reads here
+// pick up that stashed value so the layout shrinks as soon as the pattern
+// count drops (one-frame lag on transitions).
+//
+// First-time toggle (no stashed value yet) defaults to the maximum so the
+// log viewport reserves space upfront, avoiding a one-frame flash.
 func (m model) patternsAreaHeight() int {
 	if !m.patternsVisible {
 		return 0
 	}
 	// When the user has zoomed stats to full-screen, hide the patterns pane
 	// to avoid stealing rows from a deliberately-focused stats view.
+	if m.statsLayout == statsLayoutFullStats &&
+		m.statsMgr != nil && len(m.statsMgr.All()) > 0 {
+		return 0
+	}
+	maxH := m.patternsMaxAreaHeight()
+	if maxH < 2 {
+		return 0
+	}
+	stashed := int(m.s.patternsPaneHeight.Load())
+	if stashed <= 0 {
+		// No prior render has measured the actual content yet (just
+		// toggled on, or layout just changed). Reserve the max so we
+		// don't flash a too-small pane on the next frame.
+		return maxH
+	}
+	if stashed > maxH {
+		return maxH
+	}
+	if stashed < 2 {
+		return 2
+	}
+	return stashed
+}
+
+// patternsMaxAreaHeight returns the upper bound on patterns-pane height —
+// 1/4 of the terminal height, with a 2-row floor (header + one row). Kept
+// separate so View can use it directly for the pre-render layout pass
+// without depending on the stashed live value.
+func (m model) patternsMaxAreaHeight() int {
+	if !m.patternsVisible {
+		return 0
+	}
 	if m.statsLayout == statsLayoutFullStats &&
 		m.statsMgr != nil && len(m.statsMgr.All()) > 0 {
 		return 0
@@ -34,11 +70,18 @@ func (m model) patternsAreaHeight() int {
 	if avail < 4 {
 		return 0
 	}
-	h := avail / 3
-	if h < 4 {
-		h = 4
+	maxH := m.height / 4
+	if maxH < 2 {
+		maxH = 2
 	}
-	return h
+	// Don't exceed the available space (mostly defensive on tiny terminals).
+	if maxH > avail-m.statsAreaHeight() {
+		maxH = avail - m.statsAreaHeight()
+	}
+	if maxH < 2 {
+		return 0
+	}
+	return maxH
 }
 
 // updatePatternsMode handles key events while the patterns pane has focus.

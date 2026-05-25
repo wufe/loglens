@@ -67,6 +67,13 @@ type sharedState struct {
 	// without blocking — non-blocking semantics are enforced inside the
 	// manager's per-stat Feed (channel send with default).
 	statsMgr atomic.Pointer[stats.Manager]
+
+	// patternsPaneHeight is the row count the patterns pane should occupy
+	// this render. Written by View at the end of each render based on the
+	// just-computed pattern count; read by patternsAreaHeight (which feeds
+	// into viewportHeight). Atomic so other viewportHeight callers
+	// (PgUp/PgDown, offload cycle) don't need the mutex.
+	patternsPaneHeight atomic.Int32
 }
 
 func newSharedState(ls *store.LineStore) *sharedState {
