@@ -131,33 +131,40 @@ func (m model) updatePatternsMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// visiblePatterns computes the patterns over the current viewport's lines
-// and also returns the parallel slice of store indices, so a caller that
-// wants both the panel content and the row-highlight set doesn't need to
-// re-walk the viewport math.
+// visiblePatterns computes the patterns over the *largest* viewport
+// the pane could ever occupy (i.e. assuming the pane shrinks to its
+// minimum two rows). Using a stable window decouples the pattern set
+// from the pane height, which removes the feedback loop responsible for
+// the layout flicker seen with wrap-off:
+//
+//   - With a vh-dependent window, every pane resize changed the visible
+//     line count, which changed the pattern count, which changed the
+//     pane size next frame — an oscillation cycle.
+//   - With a fixed window, the pattern set depends only on m.offset and
+//     the terminal size, both of which are constant across consecutive
+//     frames. The pane settles in one frame and stays there.
+//
+// Some patterns may correspond to lines that fall in the pane area
+// (off-screen) at the chosen pane size; their LineIndices are still
+// valid, the row-highlight pass just silently skips indices that have
+// no rendered row.
 func (m model) visiblePatterns() (pats []pattern.Pattern, storeIdx []int) {
 	if !m.patternsVisible {
 		return nil, nil
 	}
-	raws, storeIdx := m.visibleLineSnapshot()
+	raws, storeIdx := m.patternsStableSnapshot()
 	if len(raws) == 0 {
 		return nil, nil
 	}
 	return pattern.ExtractPatterns(raws), storeIdx
 }
 
-// visibleLineSnapshot walks the same arithmetic the renderer uses
-// (visualRowsForLineStatic + offsetRow at the top) and returns, in display
-// order:
-//   - the Raw string of every line that contributes at least one row to the
-//     viewport
-//   - the store-index of each of those lines, so the caller can map a
-//     pattern's window-relative LineIndices back to actual store rows
-//
-// Holds the shared read lock just long enough to snapshot the strings —
-// pattern masking runs outside this function so the ingestor isn't blocked
-// while regex rules execute.
-func (m model) visibleLineSnapshot() (raws []string, storeIdx []int) {
+// patternsStableSnapshot is like visibleLineSnapshot but walks far enough
+// to cover the largest viewport the pane could ever leave behind (total
+// avail minus minimum pane height = avail - 2). The result is stable
+// across pane-height changes, so feeding it to ExtractPatterns produces
+// a stable pattern set frame to frame.
+func (m model) patternsStableSnapshot() (raws []string, storeIdx []int) {
 	if m.s == nil || m.s.store == nil {
 		return nil, nil
 	}
@@ -167,7 +174,14 @@ func (m model) visibleLineSnapshot() (raws []string, storeIdx []int) {
 	if n == 0 {
 		return nil, nil
 	}
-	vh := m.viewportHeight()
+	// Use the largest possible viewport (assume the pane will shrink to its
+	// 2-row minimum). The window we walk is therefore the same regardless
+	// of how big the pane ends up being.
+	avail := m.height - 1
+	if m.searchMode {
+		avail--
+	}
+	vh := avail - m.statsAreaHeight() - 2
 	if vh <= 0 {
 		return nil, nil
 	}

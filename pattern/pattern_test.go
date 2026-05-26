@@ -390,6 +390,64 @@ func TestPostgresStyleTimestampsCollapse(t *testing.T) {
 	}
 }
 
+// TestHighlySimilarRowsCollapseBeyondTarget covers the failure mode where
+// the user has 50+ rows that share almost all of their structure (same
+// region, same column shape, same trailing JSON) and only differ in IDs
+// and small integer columns. With a hard target = ceil(sqrt(N)) cap, the
+// algorithm stopped at ~8 clusters even though every remaining pair had
+// ~0.8 Jaccard similarity. The two-tier floor lets it keep going past the
+// target as long as remaining pairs are similar enough, so the user sees
+// 1–3 clusters instead of 8.
+func TestHighlySimilarRowsCollapseBeyondTarget(t *testing.T) {
+	ClearCache()
+	row := func(a, b, day, hms, frac, num, c, d, sm1, sm2 string) string {
+		_ = b
+		return a + "|87873725-1321-4958-8ca9-84fa8e343690|2026-" + day + " " + hms + "." + frac +
+			"+00|" + num + "|eu-west-1|" + c + "|5|2026|bucket|" + sm1 + "|" + sm2 +
+			`|"{""region_name"":""eu-west-1"",""service_name"":""s3"",""resource_type"":""bucket"",""resource_id"":""` + d + `"",""crn"":""crn:eu-west-1:s3:bucket:` + d + `""}"|NULL`
+	}
+	// 12 near-identical lines with various date / numeric / UUID values.
+	// Same fundamental shape — should collapse aggressively.
+	lines := []string{
+		row("f6466b14-6c1d-4b18-95ca-9374c02f1875", "", "05-25", "13:31:40", "861478", "42412203", "9dd3a292-7a27-4388-88cc-8c31c802d181", "9dd3a292-7a27-4388-88cc-8c31c802d181", "0", "25"),
+		row("00a50c9f-4bf7-4002-9852-2404bf6360ee", "", "05-25", "13:31:40", "861478", "38873328", "db308cfd-2529-4722-ab61-1ce3b0736281", "db308cfd-2529-4722-ab61-1ce3b0736281", "0", "25"),
+		row("6b5a4b46-0938-4f54-bb6c-69aa9f5ca720", "", "05-25", "13:31:40", "861478", "19555155", "d775e495-b17c-4332-a9b0-a08cc2d596af", "d775e495-b17c-4332-a9b0-a08cc2d596af", "0", "25"),
+		row("3ee25a2f-1995-466e-9e36-0cebe732383c", "", "05-25", "13:31:40", "861478", "17836121", "3e4e304f-4633-4906-bbe9-4751dd4e86e9", "3e4e304f-4633-4906-bbe9-4751dd4e86e9", "0", "25"),
+		row("85e14db9-9a19-48d0-a633-b82f67db0a69", "", "04-08", "11:32:33", "730888", "16432065", "5179affc-b040-4694-88cc-8fce6759ff4e", "5179affc-b040-4694-88cc-8fce6759ff4e", "22", "7"),
+		row("9fe7d676-483c-49a6-935b-6d700f50d3ad", "", "05-25", "13:31:52", "170909", "16338969", "f39bfa1d-a30a-4b8d-b31e-f08ab0d38bc8", "f39bfa1d-a30a-4b8d-b31e-f08ab0d38bc8", "0", "25"),
+		row("6ca65db0-86f5-41d6-b05f-1a109b6ed930", "", "05-25", "12:32:00", "545842", "15901612", "7ed471d6-d3e2-4ba2-b1b1-e18d6450a64f", "7ed471d6-d3e2-4ba2-b1b1-e18d6450a64f", "23", "24"),
+		row("222f48a5-cb93-4575-ab09-1f498e0ed415", "", "05-23", "20:31:48", "426104", "14680735", "f7c63f81-1ffb-4738-896f-4a3b98a69ee0", "f7c63f81-1ffb-4738-896f-4a3b98a69ee0", "7", "23"),
+		row("4d086bef-1d0f-4a69-afd8-67d26d7daf9a", "", "05-24", "18:31:08", "077811", "14242217", "deec4b3b-edf6-46f2-972e-925ede17bd44", "deec4b3b-edf6-46f2-972e-925ede17bd44", "5", "24"),
+		row("6244f084-62a7-4f0c-975f-c2eacd16042a", "", "05-24", "18:31:08", "077811", "12598580", "26f3b911-4200-464f-93e3-d3483b5eb729", "26f3b911-4200-464f-93e3-d3483b5eb729", "5", "24"),
+		row("97400154-cf74-470b-b25e-c5414305acbc", "", "05-25", "00:31:05", "097528", "10589136", "d801cb45-47db-4228-b6fc-d415d39b52a1", "d801cb45-47db-4228-b6fc-d415d39b52a1", "11", "24"),
+		row("e68560da-5164-48cf-b533-abc9e19502b8", "", "05-03", "14:31:32", "591367", "8408367", "fd39a788-248f-4405-bac1-ef846a828be6", "fd39a788-248f-4405-bac1-ef846a828be6", "1", "3"),
+	}
+	pats := ExtractPatterns(lines)
+	// 12 lines, target = ceil(sqrt(12)) = 4. Old behavior stopped here at
+	// 4–8 clusters; new behavior keeps merging past target when remaining
+	// pairs are still very similar. These rows are highly similar, so we
+	// expect 1–3 clusters.
+	if len(pats) > 3 {
+		t.Fatalf("expected ≤3 clusters once highly similar rows merge past target; got %d:\n%s",
+			len(pats), dumpPatterns(pats))
+	}
+	// Every input line must still appear exactly once.
+	seen := make(map[int]bool, len(lines))
+	for _, p := range pats {
+		for _, idx := range p.LineIndices {
+			if seen[idx] {
+				t.Errorf("line %d appears in multiple clusters", idx)
+			}
+			seen[idx] = true
+		}
+	}
+	for i := range lines {
+		if !seen[i] {
+			t.Errorf("line %d missing from output", i)
+		}
+	}
+}
+
 // TestCacheClearable confirms ClearCache actually empties the memoization
 // state. Hard to assert directly without exposing internals, so we check
 // indirectly via behavior: after clearing, calling ExtractPatterns still

@@ -304,10 +304,19 @@ func skeletonKey(line string) string {
 
 // mergeSimilarityFloor is the minimum Jaccard similarity between two
 // clusters' token multisets for the adaptive merge to consider them
-// mergeable. Pairs below this score stay split even if we're over target —
-// the floor prevents the algorithm from forcibly homogenizing genuinely
-// different lines just to hit a number.
+// mergeable while we're still above the sqrt(N) target. Pairs below this
+// score stay split even if the algorithm would otherwise merge them — the
+// floor prevents homogenizing genuinely different lines just to hit a
+// number.
 const mergeSimilarityFloor = 0.6
+
+// mergeStrictFloor kicks in once the cluster count is at-or-below the
+// adaptive target. At that point we keep merging only if the remaining
+// pairs are very similar; otherwise we stop. This makes the sqrt(N) target
+// a soft goal: heterogeneous data settles around the target (because the
+// next-best pair falls below this strict floor) while homogeneous data
+// keeps collapsing until even the most-similar remaining pair drops below.
+const mergeStrictFloor = 0.85
 
 // adaptiveMerge greedily merges the most-similar cluster pair until either
 // the input-size-derived target is reached or no remaining pair exceeds the
@@ -340,9 +349,19 @@ func adaptiveMerge(clusters []Pattern, lineCount int) []Pattern {
 		multisets[i], sizes[i] = tokenMultiset(clusters[i].SkeletonKey)
 	}
 
-	for len(clusters) > target {
+	for len(clusters) > 1 {
+		// Pick the floor based on whether we're still above the target.
+		// Above target: lax floor lets the algorithm clear obvious near-
+		// duplicates aggressively. Below target: strict floor only allows
+		// further merging when remaining pairs are very similar — so
+		// heterogeneous data settles near the target while homogeneous
+		// data keeps collapsing.
+		floor := mergeSimilarityFloor
+		if len(clusters) <= target {
+			floor = mergeStrictFloor
+		}
 		bestI, bestJ := -1, -1
-		bestSim := mergeSimilarityFloor
+		bestSim := floor
 		for i := 0; i < len(clusters); i++ {
 			for j := i + 1; j < len(clusters); j++ {
 				sim := jaccardMultiset(multisets[i], multisets[j], sizes[i], sizes[j])
@@ -353,8 +372,10 @@ func adaptiveMerge(clusters []Pattern, lineCount int) []Pattern {
 			}
 		}
 		if bestI < 0 {
-			// No pair similar enough — stop merging even if we're still
-			// above target. The floor is doing its job.
+			// No pair clears the current floor — stop merging. Above
+			// target this means we have genuinely-different clusters; at
+			// or below target this means remaining differences are
+			// substantial enough to be worth showing the user.
 			break
 		}
 		merged := mergeClusters(clusters[bestI], clusters[bestJ])
